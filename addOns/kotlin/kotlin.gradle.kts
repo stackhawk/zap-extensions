@@ -9,7 +9,6 @@ description = "Allows Kotlin to be used for ZAP scripting - (some) templates inc
 
 zapAddOn {
     addOnName.set("Kotlin Support")
-
     addOnStatus.set(AddOnStatus.ALPHA)
     zapVersion.set("2.9.0")
 
