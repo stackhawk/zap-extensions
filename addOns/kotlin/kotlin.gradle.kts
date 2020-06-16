@@ -1,9 +1,4 @@
 import org.zaproxy.gradle.addon.AddOnStatus
-
-plugins {
-    kotlin("jvm") version "1.3.50"
-}
-
 version = "1.0.0"
 description = "Allows Kotlin to be used for ZAP scripting - (some) templates included"
 
