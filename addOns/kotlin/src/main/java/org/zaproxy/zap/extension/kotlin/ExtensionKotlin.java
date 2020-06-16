@@ -56,9 +56,20 @@ public class ExtensionKotlin extends ExtensionAdaptor {
                         : null;
     }
 
+    private KotlinEngineWrapper engineWrapper;
+
     public ExtensionKotlin() {
         super(NAME);
-        setOrder(EXTENSION_ORDER);
+    }
+
+    @Override
+    public String getUIName() {
+        return Constant.messages.getString("kotlin.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return Constant.messages.getString("kotlin.desc");
     }
 
     @Override
