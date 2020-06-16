@@ -87,4 +87,19 @@ public class ExtensionKotlin extends ExtensionAdaptor {
     private ExtensionScript getExtScript() {
         return Control.getSingleton().getExtensionLoader().getExtension(ExtensionScript.class);
     }
+
+    @Override
+    public boolean canUnload() {
+        return true;
+    }
+
+    @Override
+    public void unload() {
+        getExtScript().removeScriptEngineWrapper(engineWrapper);
+    }
+
+    @Override
+    public boolean supportsDb(String type) {
+        return true;
+    }
 }
