@@ -13,10 +13,10 @@ zapAddOn {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable")
-    implementation("org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable")
-    implementation("org.jetbrains.kotlin:kotlin-script-util")
+    val ktVersion = "1.3.72"
+    api("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$ktVersion")
+    implementation("org.jetbrains.kotlin:kotlin-scripting-jsr223-embeddable:$ktVersion")
+    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:$ktVersion")
 
     testImplementation(project(":testutils"))
 }
