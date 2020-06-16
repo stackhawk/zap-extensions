@@ -76,15 +76,8 @@ public class ExtensionKotlin extends ExtensionAdaptor {
     public void hook(ExtensionHook extensionHook) {
         super.hook(extensionHook);
 
-        LOGGER.debug("Hooking Kotlin Scripting Extension");
-        String zapJar = ZAP.class.getProtectionDomain().getCodeSource().getLocation().getFile();
-
-        LOGGER.debug("Loading Kotlin engine...");
-        AddOnLoader addonLoader = ExtensionFactory.getAddOnLoader();
-        Arrays.stream(addonLoader.getURLs()).forEach(LOGGER::debug);
-        KotlinScriptEngineFactory factory = new KotlinScriptEngineFactory(addonLoader, zapJar);
-        getExtScript().registerScriptEngineWrapper(new KotlinEngineWrapper(factory));
-        LOGGER.debug("Kotlin engine loaded.");
+        engineWrapper = new KotlinEngineWrapper();
+        getExtScript().registerScriptEngineWrapper(engineWrapper);
     }
 
     public List<Class<? extends Extension>> getDependencies() {
