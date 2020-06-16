@@ -20,19 +20,16 @@
 package org.zaproxy.zap.extension.kotlin;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import javax.swing.*;
 import org.apache.log4j.Logger;
+import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.control.Control;
 import org.parosproxy.paros.extension.Extension;
 import org.parosproxy.paros.extension.ExtensionAdaptor;
 import org.parosproxy.paros.extension.ExtensionHook;
 import org.parosproxy.paros.view.View;
-import org.zaproxy.zap.ZAP;
-import org.zaproxy.zap.control.AddOnLoader;
-import org.zaproxy.zap.control.ExtensionFactory;
 import org.zaproxy.zap.extension.script.ExtensionScript;
 
 public class ExtensionKotlin extends ExtensionAdaptor {

@@ -21,9 +21,14 @@ package org.zaproxy.zap.extension.kotlin;
 
 import java.util.Collections;
 import java.util.List;
-import javax.script.ScriptEngineFactory;
+import javax.script.ScriptContext;
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
 import javax.swing.*;
+import kotlin.script.experimental.jsr223.KotlinJsr223DefaultScriptEngineFactory;
+import kotlin.script.experimental.jsr223.KotlinJsr223DefaultScriptEngineFactoryKt;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.zaproxy.zap.control.ExtensionFactory;
 import org.zaproxy.zap.extension.script.DefaultEngineWrapper;
 
 public class KotlinEngineWrapper extends DefaultEngineWrapper {
