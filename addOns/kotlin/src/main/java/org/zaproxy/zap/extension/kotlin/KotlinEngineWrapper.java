@@ -64,7 +64,52 @@ public class KotlinEngineWrapper extends DefaultEngineWrapper {
         return Collections.singletonList("kts");
     }
 
-    public KotlinEngineWrapper(ScriptEngineFactory factory) {
-        super(factory);
+    @Override
+    public ScriptEngine getEngine() {
+        return init(super.getEngine());
+    }
+
+    /**
+     * Initialises the script engine with custom class loader and function overrides.
+     *
+     * @param scriptEngine the script engine to initialise
+     * @return the script engine initialised
+     */
+    private ScriptEngine init(ScriptEngine scriptEngine) {
+        ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(classLoader);
+        try {
+            scriptEngine
+                    .getBindings(ScriptContext.ENGINE_SCOPE)
+                    .put("ZapScriptContext", scriptEngine.getContext());
+            // Note that this also forces the initialisation/usage of the custom class loader.
+            scriptEngine.eval(
+                    "fun print(msg: Any) { ZapScriptContext.writer.write(\"$msg\") }"
+                            + "fun println(msg: Any) { print(\"$msg\\n\") }");
+        } catch (ScriptException ignore) {
+        } finally {
+            Thread.currentThread().setContextClassLoader(currentClassLoader);
+        }
+        return scriptEngine;
+    }
+
+    private static class EngineClassLoader extends ClassLoader {
+
+        private final ClassLoader addOn;
+        private final ClassLoader fallback;
+
+        EngineClassLoader(ClassLoader addOn, ClassLoader fallback) {
+            this.addOn = addOn;
+            this.fallback = fallback;
+        }
+
+        @Override
+        protected Class<?> findClass(String name) throws ClassNotFoundException {
+            try {
+                return addOn.loadClass(name);
+            } catch (ClassNotFoundException ignore) {
+            }
+            return fallback.loadClass(name);
+        }
     }
 }
