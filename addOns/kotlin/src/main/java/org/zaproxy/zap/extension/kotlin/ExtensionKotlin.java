@@ -38,8 +38,8 @@ import org.zaproxy.zap.extension.script.ExtensionScript;
 public class ExtensionKotlin extends ExtensionAdaptor {
 
     public static final String NAME = "ExtensionKotlin";
-    public static final int EXTENSION_ORDER = 9999;
-    public static final ImageIcon KOTLIN_ICON;
+
+    static final ImageIcon KOTLIN_ICON;
     private static final List<Class<? extends Extension>> EXTENSION_DEPENDENCIES;
     private static final Logger LOGGER = Logger.getLogger(ExtensionKotlin.class);
 
