@@ -28,6 +28,22 @@ import org.zaproxy.zap.extension.script.DefaultEngineWrapper;
 
 public class KotlinEngineWrapper extends DefaultEngineWrapper {
 
+    static {
+        System.setProperty(
+                KotlinJsr223DefaultScriptEngineFactoryKt
+                        .KOTLIN_JSR223_RESOLVE_FROM_CLASSLOADER_PROPERTY,
+                "true");
+    }
+
+    private EngineClassLoader classLoader;
+
+    public KotlinEngineWrapper() {
+        super(new KotlinJsr223DefaultScriptEngineFactory());
+        this.classLoader =
+                new EngineClassLoader(
+                        getClass().getClassLoader(), ExtensionFactory.getAddOnLoader());
+    }
+
     @Override
     public ImageIcon getIcon() {
         return ExtensionKotlin.KOTLIN_ICON;
