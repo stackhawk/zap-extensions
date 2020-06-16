@@ -20,26 +20,23 @@
 package org.zaproxy.zap.extension.kotlin;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import javax.swing.*;
 import org.apache.log4j.Logger;
+import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.control.Control;
 import org.parosproxy.paros.extension.Extension;
 import org.parosproxy.paros.extension.ExtensionAdaptor;
 import org.parosproxy.paros.extension.ExtensionHook;
 import org.parosproxy.paros.view.View;
-import org.zaproxy.zap.ZAP;
-import org.zaproxy.zap.control.AddOnLoader;
-import org.zaproxy.zap.control.ExtensionFactory;
 import org.zaproxy.zap.extension.script.ExtensionScript;
 
 public class ExtensionKotlin extends ExtensionAdaptor {
 
     public static final String NAME = "ExtensionKotlin";
-    public static final int EXTENSION_ORDER = 9999;
-    public static final ImageIcon KOTLIN_ICON;
+
+    static final ImageIcon KOTLIN_ICON;
     private static final List<Class<? extends Extension>> EXTENSION_DEPENDENCIES;
     private static final Logger LOGGER = Logger.getLogger(ExtensionKotlin.class);
 
@@ -56,24 +53,28 @@ public class ExtensionKotlin extends ExtensionAdaptor {
                         : null;
     }
 
+    private KotlinEngineWrapper engineWrapper;
+
     public ExtensionKotlin() {
         super(NAME);
-        setOrder(EXTENSION_ORDER);
+    }
+
+    @Override
+    public String getUIName() {
+        return Constant.messages.getString("kotlin.name");
+    }
+
+    @Override
+    public String getDescription() {
+        return Constant.messages.getString("kotlin.desc");
     }
 
     @Override
     public void hook(ExtensionHook extensionHook) {
         super.hook(extensionHook);
 
-        LOGGER.debug("Hooking Kotlin Scripting Extension");
-        String zapJar = ZAP.class.getProtectionDomain().getCodeSource().getLocation().getFile();
-
-        LOGGER.debug("Loading Kotlin engine...");
-        AddOnLoader addonLoader = ExtensionFactory.getAddOnLoader();
-        Arrays.stream(addonLoader.getURLs()).forEach(LOGGER::debug);
-        KotlinScriptEngineFactory factory = new KotlinScriptEngineFactory(addonLoader, zapJar);
-        getExtScript().registerScriptEngineWrapper(new KotlinEngineWrapper(factory));
-        LOGGER.debug("Kotlin engine loaded.");
+        engineWrapper = new KotlinEngineWrapper();
+        getExtScript().registerScriptEngineWrapper(engineWrapper);
     }
 
     public List<Class<? extends Extension>> getDependencies() {
@@ -82,5 +83,20 @@ public class ExtensionKotlin extends ExtensionAdaptor {
 
     private ExtensionScript getExtScript() {
         return Control.getSingleton().getExtensionLoader().getExtension(ExtensionScript.class);
+    }
+
+    @Override
+    public boolean canUnload() {
+        return true;
+    }
+
+    @Override
+    public void unload() {
+        getExtScript().removeScriptEngineWrapper(engineWrapper);
+    }
+
+    @Override
+    public boolean supportsDb(String type) {
+        return true;
     }
 }
