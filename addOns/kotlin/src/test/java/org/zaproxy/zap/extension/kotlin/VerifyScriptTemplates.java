@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.script.Compilable;
 import javax.script.CompiledScript;
+import kotlin.script.experimental.jsr223.KotlinJsr223DefaultScriptEngineFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.zaproxy.zap.testutils.AbstractVerifyScriptTemplates;
 
@@ -35,11 +36,7 @@ public class VerifyScriptTemplates extends AbstractVerifyScriptTemplates {
 
     @BeforeAll
     public static void setUp() {
-        se =
-                (Compilable)
-                        new KotlinScriptEngineFactory(
-                                        Thread.currentThread().getContextClassLoader(), null)
-                                .getScriptEngine();
+        se = (Compilable) new KotlinJsr223DefaultScriptEngineFactory().getScriptEngine();
     }
 
     @Override

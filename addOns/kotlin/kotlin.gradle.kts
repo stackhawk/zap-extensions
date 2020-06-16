@@ -1,11 +1,6 @@
 import org.zaproxy.gradle.addon.AddOnStatus
-
-plugins {
-    kotlin("jvm") version "1.3.50"
-}
-
 version = "1.0.0"
-description = "Allows Kotlin to be used for ZAP scripting - (some) templates included"
+description = "Allows Kotlin to be used for ZAP scripting"
 
 zapAddOn {
     addOnName.set("Kotlin Support")
@@ -18,10 +13,10 @@ zapAddOn {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable")
-    implementation("org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable")
-    implementation("org.jetbrains.kotlin:kotlin-script-util")
+    val ktVersion = "1.3.72"
+    api("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$ktVersion")
+    implementation("org.jetbrains.kotlin:kotlin-scripting-jsr223-embeddable:$ktVersion")
+    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:$ktVersion")
 
     testImplementation(project(":testutils"))
 }
