@@ -40,13 +40,21 @@ public class KotlinEngineWrapper extends DefaultEngineWrapper {
                 "true");
     }
 
-    private EngineClassLoader classLoader;
+    private ClassLoader classLoader;
 
     public KotlinEngineWrapper() {
+        this(null);
+    }
+
+    public KotlinEngineWrapper(ClassLoader engineClassLoader) {
         super(new KotlinJsr223DefaultScriptEngineFactory());
-        this.classLoader =
-                new EngineClassLoader(
-                        getClass().getClassLoader(), ExtensionFactory.getAddOnLoader());
+        if (engineClassLoader != null) {
+            this.classLoader = engineClassLoader;
+        } else {
+            this.classLoader =
+                    new EngineClassLoader(
+                            getClass().getClassLoader(), ExtensionFactory.getAddOnLoader());
+        }
     }
 
     @Override
@@ -90,7 +98,7 @@ public class KotlinEngineWrapper extends DefaultEngineWrapper {
             // Note that this also forces the initialisation/usage of the custom class loader.
             scriptEngine.eval(
                     "fun print(msg: Any) { ZapScriptContext.writer.write(\"$msg\") }"
-                            + "fun println(msg: Any) { print(\"$msg\\n\") }");
+                            + "fun println(msg: Any) { print(\"$msg${System.lineSeparator()}\") }");
         } catch (ScriptException ignore) {
         } finally {
             Thread.currentThread().setContextClassLoader(currentClassLoader);

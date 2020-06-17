@@ -19,24 +19,31 @@
  */
 package org.zaproxy.zap.extension.kotlin;
 
-import java.io.Reader;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.script.Compilable;
 import javax.script.CompiledScript;
-import kotlin.script.experimental.jsr223.KotlinJsr223DefaultScriptEngineFactory;
+import javax.script.ScriptContext;
+import javax.script.ScriptEngine;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.zaproxy.zap.extension.alert.ExtensionAlert;
 import org.zaproxy.zap.testutils.AbstractVerifyScriptTemplates;
 
 /** Verifies that the Kotlin script templates are parsed without errors. */
 public class VerifyScriptTemplates extends AbstractVerifyScriptTemplates {
 
-    private static Compilable se;
+    private static ScriptEngine se;
 
     @BeforeAll
     public static void setUp() {
-        se = (Compilable) new KotlinJsr223DefaultScriptEngineFactory().getScriptEngine();
+        se = new KotlinEngineWrapper(Thread.currentThread().getContextClassLoader()).getEngine();
     }
 
     @Override
@@ -47,8 +54,52 @@ public class VerifyScriptTemplates extends AbstractVerifyScriptTemplates {
     @Override
     protected void parseTemplate(Path template) throws Exception {
         try (Reader reader = Files.newBufferedReader(template, StandardCharsets.UTF_8)) {
-            CompiledScript cs = se.compile(reader);
+            Compilable c = (Compilable) se;
+            CompiledScript cs = c.compile(reader);
             cs.eval();
         }
+    }
+
+    @Test
+    public void shouldPrintToScriptContextWriter() throws Exception {
+        String script = getScriptContents("printTest.kts");
+
+        ByteArrayOutputStream console = new ByteArrayOutputStream();
+        ScriptContext sc = se.getContext();
+        Writer originalWriter = sc.getWriter();
+
+        try {
+            sc.setWriter(new PrintWriter(console));
+            Compilable c = (Compilable) se;
+            CompiledScript cs = c.compile(script);
+
+            cs.eval();
+
+            sc.getWriter().flush();
+            assertEquals("ZAP" + System.lineSeparator(), console.toString());
+        } finally {
+            sc.setWriter(originalWriter);
+        }
+    }
+
+    @Test
+    public void shouldHaveSameHashCode() throws Exception {
+
+        int jvmHashCode = ExtensionAlert.class.hashCode();
+
+        String script = getScriptContents("hashcodeTest.kts");
+        Compilable c = (Compilable) se;
+        CompiledScript cs = c.compile(script);
+        Object retVal = cs.eval();
+
+        assertTrue(retVal instanceof Integer);
+
+        Integer scriptHashCode = (Integer) retVal;
+        assertEquals(jvmHashCode, scriptHashCode);
+    }
+
+    private String getScriptContents(String scriptName) throws IOException {
+        return FileUtils.readFileToString(
+                new File(this.getClass().getResource(scriptName).getFile()), "UTF-8");
     }
 }
