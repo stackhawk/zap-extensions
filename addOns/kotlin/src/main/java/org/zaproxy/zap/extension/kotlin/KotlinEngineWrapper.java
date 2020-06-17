@@ -24,7 +24,7 @@ import java.util.List;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
-import javax.swing.*;
+import javax.swing.ImageIcon;
 import kotlin.script.experimental.jsr223.KotlinJsr223DefaultScriptEngineFactory;
 import kotlin.script.experimental.jsr223.KotlinJsr223DefaultScriptEngineFactoryKt;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
