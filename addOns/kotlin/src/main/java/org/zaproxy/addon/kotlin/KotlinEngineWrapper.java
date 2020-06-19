@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.zaproxy.zap.extension.kotlin;
+package org.zaproxy.addon.kotlin;
 
 import java.util.Collections;
 import java.util.List;
@@ -40,21 +40,15 @@ public class KotlinEngineWrapper extends DefaultEngineWrapper {
                 "true");
     }
 
-    private ClassLoader classLoader;
+    private final EngineClassLoader classLoader;
 
     public KotlinEngineWrapper() {
-        this(null);
+        this(ExtensionFactory.getAddOnLoader());
     }
 
-    public KotlinEngineWrapper(ClassLoader engineClassLoader) {
+    KotlinEngineWrapper(ClassLoader fallbackClassLoader) {
         super(new KotlinJsr223DefaultScriptEngineFactory());
-        if (engineClassLoader != null) {
-            this.classLoader = engineClassLoader;
-        } else {
-            this.classLoader =
-                    new EngineClassLoader(
-                            getClass().getClassLoader(), ExtensionFactory.getAddOnLoader());
-        }
+        this.classLoader = new EngineClassLoader(getClass().getClassLoader(), fallbackClassLoader);
     }
 
     @Override
@@ -98,7 +92,7 @@ public class KotlinEngineWrapper extends DefaultEngineWrapper {
             // Note that this also forces the initialisation/usage of the custom class loader.
             scriptEngine.eval(
                     "fun print(msg: Any) { ZapScriptContext.writer.write(\"$msg\") }"
-                            + "fun println(msg: Any) { print(\"$msg${System.lineSeparator()}\") }");
+                            + "fun println(msg: Any) { print(\"$msg\\n\") }");
         } catch (ScriptException ignore) {
         } finally {
             Thread.currentThread().setContextClassLoader(currentClassLoader);
