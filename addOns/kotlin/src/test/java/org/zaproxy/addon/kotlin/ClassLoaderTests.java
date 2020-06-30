@@ -28,6 +28,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Paths;
 import javax.script.Compilable;
+import javax.script.CompiledScript;
 import javax.script.ScriptEngine;
 import org.junit.jupiter.api.Test;
 import org.zaproxy.zap.ZAP;
@@ -57,7 +58,8 @@ public class ClassLoaderTests {
         Compilable c = (Compilable) se;
 
         String script1 = getScriptContents("classloaderTest1.kts");
-        Object retVal1 = c.compile(script1).eval();
+        CompiledScript cs = c.compile(script1);
+        Object retVal1 = cs.eval();
 
         assertSame(retVal1.getClass(), String.class);
         assertEquals(retVal1, "testone");

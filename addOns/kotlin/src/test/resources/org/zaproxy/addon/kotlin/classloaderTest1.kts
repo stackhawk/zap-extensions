@@ -1,3 +1,7 @@
 import testclasspath.TestClassOne
 
-TestClassOne().testOne()
+fun fn():String {
+    return TestClassOne().testOne()
+}
+
+fn()
