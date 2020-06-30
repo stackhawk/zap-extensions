@@ -35,9 +35,16 @@ import org.zaproxy.zap.ZAP;
 
 public class ClassLoaderTests {
 
+    private static final String testClassName = "testclasspath.TestClassOne";
+
     private ClassLoader testFallbackClassLoader() throws Exception {
         String testClasspath =
-                Paths.get(getClass().getResource("testclasspath").getFile()).getParent().toString();
+                Paths.get(
+                                getClass()
+                                        .getResource("/org/zaproxy/addon/kotlin/testclasspath")
+                                        .getFile())
+                        .getParent()
+                        .toString();
         return new URLClassLoader(new URL[] {new URL("file://" + testClasspath + "/")});
     }
 
@@ -47,10 +54,13 @@ public class ClassLoaderTests {
         ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
 
         assertThrows(
-                ClassNotFoundException.class,
-                () -> currentClassLoader.loadClass("testclasspath.TestClassOne"));
+                ClassNotFoundException.class, () -> currentClassLoader.loadClass(testClassName));
 
         ClassLoader fallbackClassloader = testFallbackClassLoader();
+
+        Class<?> clz = fallbackClassloader.loadClass(testClassName);
+
+        assertEquals(testClassName, clz.getName());
 
         KotlinEngineWrapper kew = new KotlinEngineWrapper(fallbackClassloader);
 
