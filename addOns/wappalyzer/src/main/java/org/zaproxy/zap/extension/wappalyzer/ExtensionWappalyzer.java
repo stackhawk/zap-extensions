@@ -204,11 +204,6 @@ public class ExtensionWappalyzer extends ExtensionAdaptor
     }
 
     @Override
-    public String getAuthor() {
-        return Constant.ZAP_TEAM;
-    }
-
-    @Override
     public String getDescription() {
         return Constant.messages.getString("wappalyzer.desc");
     }
@@ -218,6 +213,7 @@ public class ExtensionWappalyzer extends ExtensionAdaptor
         return Constant.messages.getString("wappalyzer.name");
     }
 
+    @Override
     public List<Application> getApplications() {
         return this.applications;
     }
@@ -235,6 +231,7 @@ public class ExtensionWappalyzer extends ExtensionAdaptor
         return model;
     }
 
+    @Override
     public void addApplicationsToSite(String site, ApplicationMatch applicationMatch) {
 
         this.getTechModelForSite(site).addApplication(applicationMatch);
