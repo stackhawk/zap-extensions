@@ -20,11 +20,14 @@
 package org.zaproxy.addon.kotlin;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.FileUtils;
 
 public class TestUtils {
-    static String getScriptContents(String scriptName) throws java.io.IOException {
+    static String getScriptContents(String scriptName) throws IOException {
         return FileUtils.readFileToString(
-                new File(TestUtils.class.getResource(scriptName).getFile()), "UTF-8");
+                new File(TestUtils.class.getResource(scriptName).getFile()),
+                StandardCharsets.UTF_8);
     }
 }
