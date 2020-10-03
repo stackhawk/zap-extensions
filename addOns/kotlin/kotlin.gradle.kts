@@ -1,5 +1,6 @@
 import org.zaproxy.gradle.addon.AddOnStatus
-version = "1.0.0"
+
+version = "1.1.0"
 description = "Allows Kotlin to be used for ZAP scripting"
 
 zapAddOn {
@@ -9,6 +10,7 @@ zapAddOn {
 
     manifest {
         author.set("StackHawk Engineering")
+        url.set("https://www.zaproxy.org/docs/desktop/addons/kotlin-support/")
     }
 }
 

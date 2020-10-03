@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import javax.swing.ImageIcon;
-import org.apache.log4j.Logger;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.control.Control;
 import org.parosproxy.paros.extension.Extension;
@@ -38,7 +37,6 @@ public class ExtensionKotlin extends ExtensionAdaptor {
 
     static final ImageIcon KOTLIN_ICON;
     private static final List<Class<? extends Extension>> EXTENSION_DEPENDENCIES;
-    private static final Logger LOGGER = Logger.getLogger(ExtensionKotlin.class);
 
     static {
         List<Class<? extends Extension>> dependencies = new ArrayList<>(1);
@@ -47,9 +45,7 @@ public class ExtensionKotlin extends ExtensionAdaptor {
 
         KOTLIN_ICON =
                 View.isInitialised()
-                        ? new ImageIcon(
-                                ExtensionKotlin.class.getResource(
-                                        "/org/zaproxy/zap/extension/kotlin/resources/kotlin.png"))
+                        ? new ImageIcon(ExtensionKotlin.class.getResource("resources/kotlin.png"))
                         : null;
     }
 
@@ -77,6 +73,7 @@ public class ExtensionKotlin extends ExtensionAdaptor {
         getExtScript().registerScriptEngineWrapper(engineWrapper);
     }
 
+    @Override
     public List<Class<? extends Extension>> getDependencies() {
         return EXTENSION_DEPENDENCIES;
     }
