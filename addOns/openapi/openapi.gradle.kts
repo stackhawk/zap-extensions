@@ -3,6 +3,10 @@ import org.zaproxy.gradle.addon.AddOnStatus
 version = "17"
 description = "Imports and spiders OpenAPI definitions."
 
+plugins {
+    `maven-publish`
+}
+
 zapAddOn {
     addOnName.set("OpenAPI Support")
     addOnStatus.set(AddOnStatus.BETA)
@@ -40,4 +44,20 @@ dependencies {
     }
 
     testImplementation(project(":testutils"))
+}
+
+publishing {
+    repositories {
+        gradlePluginPortal()
+        mavenLocal()
+    }
+
+    publications {
+        register("openapi", MavenPublication::class) {
+            groupId = "org.zaproxy.addon"
+            artifactId = "openapi"
+            version = version
+            from(components["java"])
+        }
+    }
 }
