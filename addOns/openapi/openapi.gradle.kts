@@ -48,8 +48,15 @@ dependencies {
 
 publishing {
     repositories {
-        gradlePluginPortal()
         mavenLocal()
+        maven {
+            name = "nest"
+            // Only publish via from CodeBuild with the set env vars
+            url = uri("""s3://artifacts.${System.getenv("APP_ENV") ?: "sandbox"}.stackhawk.com/${System.getenv("ARTIFACT_PATH") ?: "pushes"}/Nest/""")
+            authentication {
+                register("awsIm", AwsImAuthentication::class)
+            }
+        }
     }
 
     publications {
@@ -60,4 +67,12 @@ publishing {
             from(components["java"])
         }
     }
+}
+
+tasks.register("publishToStackHawk") {
+    group = "publishing"
+    dependsOn(tasks.withType<PublishToMavenRepository>().matching {
+        it.repository == publishing.repositories["nest"] &&
+                it.publication == publishing.publications["openapi"]
+    })
 }
