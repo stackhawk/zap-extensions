@@ -3,6 +3,10 @@ import org.zaproxy.gradle.addon.AddOnStatus
 version = "17"
 description = "Imports and spiders OpenAPI definitions."
 
+plugins {
+    `maven-publish`
+}
+
 zapAddOn {
     addOnName.set("OpenAPI Support")
     addOnStatus.set(AddOnStatus.BETA)
@@ -40,4 +44,35 @@ dependencies {
     }
 
     testImplementation(project(":testutils"))
+}
+
+publishing {
+    repositories {
+        mavenLocal()
+        maven {
+            name = "nest"
+            // Only publish via from CodeBuild with the set env vars
+            url = uri("""s3://artifacts.${System.getenv("APP_ENV") ?: "sandbox"}.stackhawk.com/${System.getenv("ARTIFACT_PATH") ?: "pushes"}/Nest/""")
+            authentication {
+                register("awsIm", AwsImAuthentication::class)
+            }
+        }
+    }
+
+    publications {
+        register("openapi", MavenPublication::class) {
+            groupId = "org.zaproxy.addon"
+            artifactId = "openapi"
+            version = version
+            from(components["java"])
+        }
+    }
+}
+
+tasks.register("publishToStackHawk") {
+    group = "publishing"
+    dependsOn(tasks.withType<PublishToMavenRepository>().matching {
+        it.repository == publishing.repositories["nest"] &&
+                it.publication == publishing.publications["openapi"]
+    })
 }
