@@ -96,19 +96,6 @@ public class ExtensionOpenApiTest extends AbstractServerTest {
     }
 
     @Test
-    public void shouldFailInvalidOverrideUrl() throws URIException {
-
-        // given
-        URI uri = new URI("http://foo", false);
-
-        // when
-        List<String> errors = classUnderTest.importOpenApiDefinition(uri, "htp:/", false);
-
-        //then
-        assertThat("Should fail fake URL", errors != null && !errors.isEmpty());
-    }
-
-    @Test
     public void shouldFailNonExistentUrl() throws URIException {
 
         // given
