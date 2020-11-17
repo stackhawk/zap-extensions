@@ -31,6 +31,7 @@ import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.servers.ServerVariable;
 import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.v3.parser.core.extensions.SwaggerParserExtension;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import java.io.BufferedWriter;
@@ -38,6 +39,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -385,15 +387,30 @@ public class SwaggerConverter implements Converter {
     }
 
     /**
-     * v2 & v3 parser that will resolve external file refs into single OpenAPI.
+     * File based parser for v2 and v3 specs that bundles external file refs.
      *
-     * @param file
-     * @return
+     * @param file V2 or V3 OpenAPI File spec, supporting external files via ref
+     * @return Populated either with a valid OpenAPI or a list of errors
      */
-    public static OpenAPI parse(File file) {
+    public static SwaggerParseResult parse(File file) {
         ParseOptions parseOptions = new ParseOptions();
         parseOptions.setResolve(true);
         parseOptions.setResolveFully(true);
-        return new OpenAPIV3Parser().read(file.getAbsolutePath(), null, parseOptions);
+
+        List<String> errors = new ArrayList<>();
+        for (SwaggerParserExtension ex : OpenAPIV3Parser.getExtensions()) {
+            errors.clear();
+            SwaggerParseResult swaggerParseResult = ex.readLocation(file.getAbsolutePath(), null, parseOptions);
+            OpenAPI openAPI = swaggerParseResult.getOpenAPI();
+            if (openAPI != null) {
+                return swaggerParseResult;
+            } else {
+                errors.addAll(swaggerParseResult.getMessages());
+            }
+        }
+
+        SwaggerParseResult swaggerParseResult = new SwaggerParseResult();
+        swaggerParseResult.setMessages(errors);
+        return swaggerParseResult;
     }
 }

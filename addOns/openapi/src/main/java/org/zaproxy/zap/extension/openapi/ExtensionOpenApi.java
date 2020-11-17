@@ -215,11 +215,11 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
             final File file, final String targetUrl, boolean initViaUi) {
         try {
 
-            // naive parse to resolve any external file refs
-            OpenAPI openApi = SwaggerConverter.parse(file);
+            SwaggerParseResult swaggerParseResult = SwaggerConverter.parse(file);
+            OpenAPI openApi = swaggerParseResult.getOpenAPI();
 
             if (openApi == null) {
-                return Collections.singletonList(Constant.messages.getString("openapi.parse.error"));
+                return swaggerParseResult.getMessages();
             }
             return importOpenApiDefinition(Json.pretty(openApi), targetUrl, null, initViaUi);
         } catch (Exception e) {
