@@ -19,6 +19,12 @@
  */
 package org.zaproxy.zap.extension.openapi;
 
+import io.swagger.parser.OpenAPIParser;
+import io.swagger.v3.core.util.Json;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.v3.parser.core.models.ParseOptions;
+import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -208,15 +214,21 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
     public List<String> importOpenApiDefinition(
             final File file, final String targetUrl, boolean initViaUi) {
         try {
-            return importOpenApiDefinition(
-                    FileUtils.readFileToString(file, "UTF-8"), targetUrl, null, initViaUi);
-        } catch (IOException e) {
+
+            // naive parse to resolve any external file refs
+            OpenAPI openApi = SwaggerConverter.parse(file);
+
+            if (openApi == null) {
+                return Collections.singletonList(Constant.messages.getString("openapi.parse.error"));
+            }
+            return importOpenApiDefinition(Json.pretty(openApi), targetUrl, null, initViaUi);
+        } catch (Exception e) {
             if (initViaUi) {
                 View.getSingleton()
                         .showWarningDialog(Constant.messages.getString("openapi.io.error"));
             }
             LOG.warn(e.getMessage(), e);
-            return Collections.singletonList(Constant.messages.getString("openapi.io.error", e));
+            return Collections.singletonList(Constant.messages.getString("openapi.io.error" + e.getMessage()));
         }
     }
 

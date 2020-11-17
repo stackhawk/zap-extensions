@@ -383,4 +383,17 @@ public class SwaggerConverter implements Converter {
                     operationHelper.getAllOperations(entry.getValue(), url + entry.getKey()));
         }
     }
+
+    /**
+     * v2 & v3 parser that will resolve external file refs into single OpenAPI.
+     *
+     * @param file
+     * @return
+     */
+    public static OpenAPI parse(File file) {
+        ParseOptions parseOptions = new ParseOptions();
+        parseOptions.setResolve(true);
+        parseOptions.setResolveFully(true);
+        return new OpenAPIV3Parser().read(file.getAbsolutePath(), null, parseOptions);
+    }
 }

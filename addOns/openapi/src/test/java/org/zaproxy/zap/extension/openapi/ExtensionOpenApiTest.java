@@ -1,3 +1,22 @@
+/*
+ * Zed Attack Proxy (ZAP) and its related class files.
+ *
+ * ZAP is an HTTP/HTTPS proxy for assessing web application security.
+ *
+ * Copyright 2019 The ZAP Development Team
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.zaproxy.zap.extension.openapi;
 
 import fi.iki.elonen.NanoHTTPD;
@@ -76,7 +95,39 @@ public class ExtensionOpenApiTest extends AbstractServerTest {
         List<String> errors = classUnderTest.importOpenApiDefinition(tmpFile, false);
 
         //then
-        assertThat("Should parse OK", errors.isEmpty());
+        assertThat("Should parse OK: " + errors, errors.isEmpty());
+    }
+
+    @Test
+    public void shouldImportMultiFileV3() throws IOException {
+        // given
+        String test = "/PetStoreJson/";
+        String defnName = "defn.json";
+        String file = "v3/multi-file/api.yaml";
+        this.nano.addHandler(new DefnServerHandler(test, defnName, file));
+
+        // when
+        List<String> errors = classUnderTest.importOpenApiDefinition(
+                getResourcePath(file).toFile(), false);
+
+        //then
+        assertThat("Should parse OK: " + errors, errors.isEmpty());
+    }
+
+    @Test
+    public void shouldImportMultiFileV2() throws IOException {
+        // given
+        String test = "/PetStoreJson/";
+        String defnName = "defn.json";
+        String file = "v2/multi-file/api.yaml";
+        this.nano.addHandler(new DefnServerHandler(test, defnName, file));
+
+        // when
+        List<String> errors = classUnderTest.importOpenApiDefinition(
+                getResourcePath(file).toFile(), false);
+
+        //then
+        assertThat("Should parse OK: " + errors, errors.isEmpty());
     }
 
     @Test
