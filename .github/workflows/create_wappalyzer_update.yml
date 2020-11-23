@@ -3,11 +3,7 @@ name: Create Wappalyzer Update PR
 on:
   schedule:
     - cron:  '0 4 3 * *'
-  repository_dispatch:
-    types: wappalyzer
-  # Trigger using CURL or similar such as:
-  # curl -XPOST -u "<replace_username>:<replace_personal_access_token>" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/zaproxy/zap-extensions/dispatches --data '{"event_type": "wappalyzer"}'
-  # Replace the username and personal access token, including angled brackets
+  workflow_dispatch:
 
 jobs:
   create_pr:
@@ -40,7 +36,7 @@ jobs:
         chmod -R 664 wappalyzer/src/drivers/webextension/images/icons/*.*
         rm -rf wappalyzer/src/drivers/webextension/images/icons/converted/
         cp -R wappalyzer/src/drivers/webextension/images/icons/ zap-extensions/addOns/wappalyzer/src/main/resources/org/zaproxy/zap/extension/wappalyzer/resources/icons
-        cp -f wappalyzer/src/apps.json zap-extensions/addOns/wappalyzer/src/main/resources/org/zaproxy/zap/extension/wappalyzer/resources
+        cp -f wappalyzer/src/technologies.json zap-extensions/addOns/wappalyzer/src/main/resources/org/zaproxy/zap/extension/wappalyzer/resources/apps.json
         cd zap-extensions
         ## Update the index to be sure git is aware of changes
         git update-index -q --refresh

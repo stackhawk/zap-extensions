@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.prefs.Preferences;
 import javax.swing.AbstractAction;
@@ -144,6 +145,9 @@ public class ExtensionFuzz extends ExtensionAdaptor {
     private ScriptType scriptTypeGenerator;
     private ScriptType scriptTypeProcessor;
     private ZapMenuItem menuItemCustomScan = null;
+
+    private MessagePanelManager clientMessagePanelManager;
+    private MessagePanelManager serverMessagePanelManager;
 
     public ExtensionFuzz() {
         super(NAME);
@@ -310,6 +314,9 @@ public class ExtensionFuzz extends ExtensionAdaptor {
                     ScriptStringPayloadProcessorAdapter.class,
                     new ScriptStringPayloadProcessorAdapterUIHandler(extensionScript));
         }
+
+        clientMessagePanelManager = new MessagePanelManager();
+        serverMessagePanelManager = new MessagePanelManager();
     }
 
     @Override
@@ -401,6 +408,24 @@ public class ExtensionFuzz extends ExtensionAdaptor {
         super.destroy();
 
         fuzzersController.stopAllScans();
+    }
+
+    /**
+     * Gets the panel manager for client messages.
+     *
+     * @return the panel manager for client messages, {@code null} if there's no view.
+     */
+    public MessagePanelManager getClientMessagePanelManager() {
+        return clientMessagePanelManager;
+    }
+
+    /**
+     * Gets the panel manager for server messages.
+     *
+     * @return the panel manager for server messages, {@code null} if there's no view.
+     */
+    public MessagePanelManager getServerMessagePanelManager() {
+        return serverMessagePanelManager;
     }
 
     private ZapMenuItem getMenuItemCustomScan() {
@@ -560,7 +585,7 @@ public class ExtensionFuzz extends ExtensionAdaptor {
 
     public <M extends Message, F extends Fuzzer<M>> void addFuzzerHandler(
             FuzzerHandler<M, F> fuzzerHandler) {
-        fuzzerHandlers.add(fuzzerHandler);
+        fuzzerHandlers.add(Objects.requireNonNull(fuzzerHandler));
 
         if (defaultFuzzerHandler == null) {
             defaultFuzzerHandler = fuzzerHandler;

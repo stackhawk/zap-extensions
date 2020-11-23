@@ -1,11 +1,11 @@
 import org.zaproxy.gradle.addon.AddOnStatus
 
-version = "20.2.0"
+version = "20.4.0"
 description = "Technology detection using Wappalyzer: wappalyzer.com"
 
 zapAddOn {
     addOnName.set("Wappalyzer - Technology Detection")
-    addOnStatus.set(AddOnStatus.BETA)
+    addOnStatus.set(AddOnStatus.RELEASE)
     zapVersion.set("2.9.0")
 
     manifest {
@@ -20,9 +20,9 @@ zapAddOn {
 }
 
 dependencies {
-    implementation("com.google.re2j:re2j:1.4")
+    implementation("com.google.re2j:re2j:1.5")
 
-    val batikVersion = "1.12"
+    val batikVersion = "1.13"
     implementation("org.apache.xmlgraphics:batik-anim:$batikVersion")
     implementation("org.apache.xmlgraphics:batik-bridge:$batikVersion")
     implementation("org.apache.xmlgraphics:batik-ext:$batikVersion")
