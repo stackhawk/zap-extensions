@@ -55,18 +55,31 @@ public class WappalyzerJsonParser {
     private static final int SIZE = 16;
 
     private static final Logger logger = Logger.getLogger(WappalyzerJsonParser.class);
-    private PatternErrorHandler patternErrorHandler;
+    private final PatternErrorHandler patternErrorHandler;
+    private final ParsingExceptionHandler parsingExceptionHandler;
 
     public WappalyzerJsonParser() {
-        patternErrorHandler = (pattern, e) -> logger.error("Invalid pattern syntax " + pattern, e);
+        this(
+                (pattern, e) -> logger.error("Invalid pattern syntax " + pattern, e),
+                e -> logger.error(e.getMessage(), e));
     }
 
-    public WappalyzerJsonParser(PatternErrorHandler peh) {
+    WappalyzerJsonParser(PatternErrorHandler peh, ParsingExceptionHandler parsingExceptionHandler) {
         this.patternErrorHandler = peh;
+        this.parsingExceptionHandler = parsingExceptionHandler;
     }
 
     public WappalyzerData parseDefaultAppsJson() throws IOException {
         return parseJson(getStringResource(ExtensionWappalyzer.RESOURCE + "/apps.json"));
+    }
+
+    WappalyzerData parseAppsJson(String path) {
+        try {
+            return parseJson(getStringResource(path));
+        } catch (IOException e) {
+            logger.warn("An error occurred reading the file: " + path);
+        }
+        return null;
     }
 
     private static String getStringResource(String resourceName) throws IOException {
@@ -106,7 +119,7 @@ public class WappalyzerJsonParser {
                 result.addCategory(mCat.getKey(), mCat.getValue().getString("name"));
             }
 
-            JSONObject apps = json.getJSONObject("apps");
+            JSONObject apps = json.getJSONObject("technologies");
             for (Object entry : apps.entrySet()) {
                 Map.Entry<String, JSONObject> mApp = (Map.Entry<String, JSONObject>) entry;
 
@@ -115,13 +128,14 @@ public class WappalyzerJsonParser {
 
                 Application app = new Application();
                 app.setName(appName);
+                app.setDescription(appData.optString("description"));
                 app.setWebsite(appData.getString("website"));
                 app.setCategories(
                         this.jsonToCategoryList(result.getCategories(), appData.get("cats")));
                 app.setHeaders(this.jsonToAppPatternMapList("HEADER", appData.get("headers")));
                 app.setUrl(this.jsonToPatternList("URL", appData.get("url")));
                 app.setHtml(this.jsonToPatternList("HTML", appData.get("html")));
-                app.setScript(this.jsonToPatternList("SCRIPT", appData.get("script")));
+                app.setScript(this.jsonToPatternList("SCRIPT", appData.get("scripts")));
                 app.setMetas(this.jsonToAppPatternMapList("META", appData.get("meta")));
                 app.setImplies(this.jsonToStringList(appData.get("implies")));
                 app.setCpe(appData.optString("cpe"));
@@ -142,7 +156,7 @@ public class WappalyzerJsonParser {
             }
 
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            parsingExceptionHandler.handleException(e);
         }
 
         return result;
@@ -329,5 +343,9 @@ public class WappalyzerJsonParser {
             return (int) Double.parseDouble(confidence) * 100;
         }
         return Integer.parseInt(confidence);
+    }
+
+    interface ParsingExceptionHandler {
+        void handleException(Exception e);
     }
 }

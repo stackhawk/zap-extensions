@@ -20,6 +20,9 @@
 package org.zaproxy.addon.retire;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.htmlparser.jericho.Source;
@@ -27,7 +30,6 @@ import org.apache.log4j.Logger;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.core.scanner.Alert;
 import org.parosproxy.paros.network.HttpMessage;
-import org.parosproxy.paros.network.HttpStatusCode;
 import org.zaproxy.addon.retire.model.Repo;
 import org.zaproxy.zap.extension.pscan.PassiveScanThread;
 import org.zaproxy.zap.extension.pscan.PluginPassiveScanner;
@@ -57,11 +59,13 @@ public class RetireScanRule extends PluginPassiveScanner {
 
     @Override
     public void scanHttpResponseReceive(HttpMessage msg, int id, Source source) {
-        if (msg.getResponseHeader().getStatusCode() != HttpStatusCode.OK) {
+        if (!getHelper().isPage200(msg)) {
             return;
         }
         String uri = msg.getRequestHeader().getURI().toString();
-        if (!msg.getResponseHeader().isImage() && !uri.endsWith(".css")) {
+        if (!msg.getResponseHeader().isImage()
+                && !msg.getRequestHeader().isCss()
+                && !msg.getResponseHeader().isCss()) {
             Result result = getRepo().scanJS(msg);
             if (result == null) {
                 if (LOGGER.isDebugEnabled()) {
@@ -88,25 +92,32 @@ public class RetireScanRule extends PluginPassiveScanner {
                     otherInfo = otherInfo + result.getOtherinfo();
                 }
 
-                newAlert()
-                        .setRisk(Alert.RISK_MEDIUM)
-                        .setConfidence(Alert.CONFIDENCE_MEDIUM)
-                        .setDescription(
-                                Constant.messages.getString(
-                                        "retire.rule.desc",
-                                        result.getFilename(),
-                                        result.getVersion()))
-                        .setOtherInfo(otherInfo)
-                        .setReference(getDetails(Result.INFO, result.getInfo()))
-                        .setSolution(
-                                Constant.messages.getString(
-                                        "retire.rule.soln", result.getFilename()))
-                        .setEvidence(result.getEvidence())
-                        .setCweId(829) // CWE-829: Inclusion of Functionality from Untrusted Control
-                        // Sphere
-                        .raise();
+                buildAlert(result, otherInfo).raise();
             }
         }
+    }
+
+    private AlertBuilder buildAlert(Result result, String otherInfo) {
+        return newAlert()
+                .setRisk(Alert.RISK_MEDIUM)
+                .setConfidence(Alert.CONFIDENCE_MEDIUM)
+                .setDescription(
+                        Constant.messages.getString(
+                                "retire.rule.desc", result.getFilename(), result.getVersion()))
+                .setOtherInfo(otherInfo)
+                .setReference(getDetails(Result.INFO, result.getInfo()))
+                .setSolution(Constant.messages.getString("retire.rule.soln", result.getFilename()))
+                .setEvidence(result.getEvidence())
+                .setCweId(829); // CWE-829: Inclusion of Functionality from Untrusted Control Sphere
+    }
+
+    @Override
+    public List<Alert> getExampleAlerts() {
+        List<Alert> alerts = new ArrayList<Alert>();
+        alerts.add(
+                buildAlert(new Result("ExampleLibrary", "x.y.z", Collections.emptyMap(), null), "")
+                        .build());
+        return alerts;
     }
 
     private String getDetails(String key, Map<String, Set<String>> info) {

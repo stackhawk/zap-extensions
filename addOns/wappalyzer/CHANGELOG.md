@@ -5,7 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 ### Changed
-- Update RE2/J library to latest version (1.4).
+- Updated with upstream Wappalyzer icon and pattern changes.
+- Add-on promoted to Release.
+- Dependency updates.
+
+## [20.3.0] - 2020-09-30
+### Changed
+- Updated with upstream Wappalyzer icon and pattern changes.
+- Maintenance changes.
+- When available the description of a given app/technology will show in the tooltip for a row in the table, and be included in detailed API responses.
+
+## [20.2.0] - 2020-08-04
+### Changed
+- Updated with upstream Wappalyzer icon and pattern changes.
 
 ## [20.1.0] - 2020-06-30
 ### Changed
@@ -135,6 +147,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - First version
 
 
+[20.3.0]: https://github.com/zaproxy/zap-extensions/releases/wappalyzer-v20.3.0
+[20.2.0]: https://github.com/zaproxy/zap-extensions/releases/wappalyzer-v20.2.0
 [20.1.0]: https://github.com/zaproxy/zap-extensions/releases/wappalyzer-v20.1.0
 [20.0.0]: https://github.com/zaproxy/zap-extensions/releases/wappalyzer-v20.0.0
 [19]: https://github.com/zaproxy/zap-extensions/releases/wappalyzer-v19
