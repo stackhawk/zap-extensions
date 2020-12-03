@@ -21,21 +21,22 @@ package org.zaproxy.zap.extension.scripts;
 
 import java.awt.Component;
 import java.awt.Font;
+import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Vector;
 import javax.swing.Action;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
-import javax.swing.JViewport;
-import org.apache.commons.configuration.FileConfiguration;
 import org.fife.ui.rsyntaxtextarea.AbstractTokenMakerFactory;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.RTextArea;
-import org.fife.ui.rtextarea.RTextScrollPane;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.extension.ExtensionPopupMenuItem;
 import org.parosproxy.paros.view.View;
+import org.zaproxy.zap.utils.DisplayUtils;
 import org.zaproxy.zap.utils.FontUtils;
 
 public class SyntaxHighlightTextArea extends RSyntaxTextArea {
@@ -61,19 +62,6 @@ public class SyntaxHighlightTextArea extends RSyntaxTextArea {
     public static final String CSS_SYNTAX_LABEL =
             Constant.messages.getString("scripts.syntaxtext.syntax.css");
 
-    private static final String ANTI_ALIASING = "aa";
-    private static final String SHOW_LINE_NUMBERS = "linenumbers";
-    private static final String CODE_FOLDING = "codefolding";
-    private static final String WORD_WRAP = "wordwrap";
-    private static final String HIGHLIGHT_CURRENT_LINE = "highlightline";
-    private static final String FADE_CURRENT_HIGHLIGHT_LINE = "fadehighlightline";
-    private static final String SHOW_WHITESPACE_CHARACTERS = "whitespaces";
-    private static final String SHOW_NEWLINE_CHARACTERS = "newlines";
-    private static final String MARK_OCCURRENCES = "markocurrences";
-    private static final String ROUNDED_SELECTION_EDGES = "roundedselection";
-    private static final String BRACKET_MATCHING = "bracketmatch";
-    private static final String ANIMATED_BRACKET_MATCHING = "animatedbracketmatch";
-
     private Vector<SyntaxStyle> syntaxStyles;
 
     private SyntaxMenu syntaxMenu = null;
@@ -85,6 +73,13 @@ public class SyntaxHighlightTextArea extends RSyntaxTextArea {
     private TextAreaMenuItem undoAction = null;
     private TextAreaMenuItem redoAction = null;
     private TextAreaMenuItem selectAllAction = null;
+
+    private static final String RESOURCE_DARK = "/org/fife/ui/rsyntaxtextarea/themes/dark.xml";
+    private static final String RESOURCE_LIGHT = "/org/fife/ui/rsyntaxtextarea/themes/default.xml";
+
+    private Boolean supportsDarkLaF;
+    private Method isDarkLookAndFeelMethod;
+    private Boolean darkLaF;
 
     public SyntaxHighlightTextArea() {
         setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
@@ -136,104 +131,18 @@ public class SyntaxHighlightTextArea extends RSyntaxTextArea {
             font = FontUtils.getFont(Font.PLAIN);
         }
         this.setFont(font);
+
+        if (isDarkLaF()) {
+            darkLaF = true;
+            setLookAndFeel(true);
+        } else {
+            darkLaF = false;
+        }
     }
 
     @Override
     protected JPopupMenu createPopupMenu() {
         return null;
-    }
-
-    public void loadConfiguration(String key, FileConfiguration fileConfiguration) {
-        setAntiAliasingEnabled(
-                fileConfiguration.getBoolean(key + ANTI_ALIASING, this.getAntiAliasingEnabled()));
-
-        Component c = getParent();
-        if (c instanceof JViewport) {
-            c = c.getParent();
-            if (c instanceof RTextScrollPane) {
-                final RTextScrollPane scrollPane = (RTextScrollPane) c;
-                scrollPane.setLineNumbersEnabled(
-                        fileConfiguration.getBoolean(
-                                key + SHOW_LINE_NUMBERS, scrollPane.getLineNumbersEnabled()));
-
-                setCodeFoldingEnabled(
-                        fileConfiguration.getBoolean(
-                                key + CODE_FOLDING, this.isCodeFoldingEnabled()));
-                scrollPane.setFoldIndicatorEnabled(this.isCodeFoldingEnabled());
-            }
-        }
-
-        setLineWrap(fileConfiguration.getBoolean(key + WORD_WRAP, this.getLineWrap()));
-
-        setHighlightCurrentLine(
-                fileConfiguration.getBoolean(
-                        key + HIGHLIGHT_CURRENT_LINE, this.getHighlightCurrentLine()));
-        setFadeCurrentLineHighlight(
-                fileConfiguration.getBoolean(
-                        key + FADE_CURRENT_HIGHLIGHT_LINE, this.getFadeCurrentLineHighlight()));
-
-        setWhitespaceVisible(
-                fileConfiguration.getBoolean(
-                        key + SHOW_WHITESPACE_CHARACTERS, this.isWhitespaceVisible()));
-        setEOLMarkersVisible(
-                fileConfiguration.getBoolean(
-                        key + SHOW_NEWLINE_CHARACTERS, this.getEOLMarkersVisible()));
-
-        setMarkOccurrences(
-                fileConfiguration.getBoolean(key + MARK_OCCURRENCES, this.getMarkOccurrences()));
-
-        setRoundedSelectionEdges(
-                fileConfiguration.getBoolean(
-                        key + ROUNDED_SELECTION_EDGES, this.getRoundedSelectionEdges()));
-
-        setBracketMatchingEnabled(
-                fileConfiguration.getBoolean(
-                        key + BRACKET_MATCHING, this.isBracketMatchingEnabled()));
-        setAnimateBracketMatching(
-                fileConfiguration.getBoolean(
-                        key + ANIMATED_BRACKET_MATCHING, this.getAnimateBracketMatching()));
-    }
-
-    public void saveConfiguration(String key, FileConfiguration fileConfiguration) {
-        fileConfiguration.setProperty(
-                key + ANTI_ALIASING, Boolean.valueOf(this.getAntiAliasingEnabled()));
-
-        Component c = getParent();
-        if (c instanceof JViewport) {
-            c = c.getParent();
-            if (c instanceof RTextScrollPane) {
-                final RTextScrollPane scrollPane = (RTextScrollPane) c;
-                fileConfiguration.setProperty(
-                        key + SHOW_LINE_NUMBERS,
-                        Boolean.valueOf(scrollPane.getLineNumbersEnabled()));
-                fileConfiguration.setProperty(
-                        key + CODE_FOLDING, Boolean.valueOf(this.isCodeFoldingEnabled()));
-            }
-        }
-
-        fileConfiguration.setProperty(key + WORD_WRAP, Boolean.valueOf(this.getLineWrap()));
-
-        fileConfiguration.setProperty(
-                key + HIGHLIGHT_CURRENT_LINE, Boolean.valueOf(this.getHighlightCurrentLine()));
-        fileConfiguration.setProperty(
-                key + FADE_CURRENT_HIGHLIGHT_LINE,
-                Boolean.valueOf(this.getFadeCurrentLineHighlight()));
-
-        fileConfiguration.setProperty(
-                key + SHOW_WHITESPACE_CHARACTERS, Boolean.valueOf(this.isWhitespaceVisible()));
-        fileConfiguration.setProperty(
-                key + SHOW_NEWLINE_CHARACTERS, Boolean.valueOf(this.getEOLMarkersVisible()));
-
-        fileConfiguration.setProperty(
-                key + MARK_OCCURRENCES, Boolean.valueOf(this.getMarkOccurrences()));
-
-        fileConfiguration.setProperty(
-                key + ROUNDED_SELECTION_EDGES, Boolean.valueOf(this.getRoundedSelectionEdges()));
-
-        fileConfiguration.setProperty(
-                key + BRACKET_MATCHING, Boolean.valueOf(this.isBracketMatchingEnabled()));
-        fileConfiguration.setProperty(
-                key + ANIMATED_BRACKET_MATCHING, Boolean.valueOf(this.getAnimateBracketMatching()));
     }
 
     public Vector<SyntaxStyle> getSyntaxStyles() {
@@ -272,6 +181,60 @@ public class SyntaxHighlightTextArea extends RSyntaxTextArea {
             mainPopupMenuItems.add(deleteAction);
 
             mainPopupMenuItems.add(selectAllAction);
+        }
+    }
+
+    private void setLookAndFeel(boolean dark) {
+        try {
+            Theme theme =
+                    Theme.load(
+                            this.getClass()
+                                    .getResourceAsStream(dark ? RESOURCE_DARK : RESOURCE_LIGHT));
+
+            theme.apply(this);
+        } catch (IOException e) {
+            // Ignore
+        }
+    }
+
+    private boolean isDarkLaF() {
+        // TODO Update to calling the DisplayUtils.isDarkLookAndFeel() method directly once it is
+        // available
+        if (supportsDarkLaF == null) {
+            supportsDarkLaF = false;
+            try {
+                Class<DisplayUtils> cls = DisplayUtils.class;
+                isDarkLookAndFeelMethod = cls.getMethod("isDarkLookAndFeel");
+                if (isDarkLookAndFeelMethod != null) {
+                    supportsDarkLaF = true;
+                }
+            } catch (Exception e) {
+                // Ignore
+            }
+        }
+        if (isDarkLookAndFeelMethod != null) {
+            try {
+                Object obj = isDarkLookAndFeelMethod.invoke(null);
+                if (obj instanceof Boolean) {
+                    return (Boolean) obj;
+                }
+            } catch (Exception e) {
+                // Ignore
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        if (darkLaF != null && darkLaF != isDarkLaF()) {
+            if (isDarkLaF()) {
+                darkLaF = true;
+            } else {
+                darkLaF = false;
+            }
+            setLookAndFeel(darkLaF);
         }
     }
 

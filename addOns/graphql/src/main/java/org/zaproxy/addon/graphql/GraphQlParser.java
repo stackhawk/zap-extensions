@@ -20,7 +20,6 @@
 package org.zaproxy.addon.graphql;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import graphql.introspection.IntrospectionQuery;
@@ -38,9 +37,9 @@ import org.apache.commons.httpclient.URIException;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.parosproxy.paros.Constant;
+import org.parosproxy.paros.control.Control;
 import org.parosproxy.paros.network.HttpMessage;
-import org.parosproxy.paros.network.HttpRequestHeader;
-import org.zaproxy.zap.network.HttpRequestBody;
+import org.parosproxy.paros.network.HttpSender;
 
 public class GraphQlParser {
 
@@ -48,38 +47,50 @@ public class GraphQlParser {
     private static final String THREAD_PREFIX = "ZAP-GraphQL-Parser";
     private static AtomicInteger threadId = new AtomicInteger();
 
-    private final URI endpointUrl;
     private final Requestor requestor;
+    private final ExtensionGraphQl extensionGraphQl;
+    private final GraphQlParam param;
+    private boolean syncParse;
 
-    public GraphQlParser(String endpointUrlStr, int initiator) throws URIException {
-        this(UrlBuilder.build(endpointUrlStr), initiator);
+    // For Unit Tests
+    protected GraphQlParser(String endpointUrlStr) throws URIException {
+        extensionGraphQl = new ExtensionGraphQl();
+        param = extensionGraphQl.getParam();
+        requestor =
+                new Requestor(
+                        UrlBuilder.build(endpointUrlStr), HttpSender.MANUAL_REQUEST_INITIATOR);
     }
 
-    public GraphQlParser(URI endpointUrl, int initiator) {
-        this.endpointUrl = endpointUrl;
-        requestor = new Requestor(initiator);
+    public GraphQlParser(String endpointUrlStr, int initiator, boolean syncParse)
+            throws URIException {
+        this(UrlBuilder.build(endpointUrlStr), initiator, syncParse);
+    }
+
+    public GraphQlParser(URI endpointUrl, int initiator, boolean syncParse) {
+        requestor = new Requestor(endpointUrl, initiator);
+        extensionGraphQl =
+                Control.getSingleton().getExtensionLoader().getExtension(ExtensionGraphQl.class);
+        param = extensionGraphQl.getParam();
+        this.syncParse = syncParse;
     }
 
     public void introspect() throws IOException {
-        JsonObject msgBodyJson = new JsonObject();
-        msgBodyJson.addProperty("query", IntrospectionQuery.INTROSPECTION_QUERY);
-        HttpRequestBody msgBody = new HttpRequestBody(msgBodyJson.toString());
-
-        HttpRequestHeader msgHeader =
-                new HttpRequestHeader(HttpRequestHeader.POST, endpointUrl, "HTTP/1.1");
-        msgHeader.setHeader("Accept", "application/json");
-        msgHeader.setHeader("Content-Type", "application/json");
-        msgHeader.setContentLength(msgBody.length());
-
-        HttpMessage importMessage = new HttpMessage(msgHeader, msgBody);
-        requestor.send(importMessage);
-
+        HttpMessage importMessage =
+                requestor.sendQuery(
+                        IntrospectionQuery.INTROSPECTION_QUERY,
+                        GraphQlParam.RequestMethodOption.POST_JSON);
+        if (importMessage == null) {
+            throw new IOException("Could not obtain schema via Introspection.");
+        }
         try {
             Map<String, Object> result =
                     new Gson()
                             .fromJson(
                                     importMessage.getResponseBody().toString(),
                                     new TypeToken<Map<String, Object>>() {}.getType());
+            if (result == null) {
+                throw new IOException("The response was empty.");
+            }
             @SuppressWarnings("unchecked")
             Document schema =
                     new IntrospectionResultToSchema()
@@ -97,8 +108,8 @@ public class GraphQlParser {
 
     public void importUrl(URI schemaUrl) throws IOException {
         HttpMessage importMessage = new HttpMessage(schemaUrl);
+        requestor.send(importMessage);
         if (MessageValidator.validate(importMessage) == MessageValidator.Result.VALID_SCHEMA) {
-            requestor.send(importMessage);
             parse(importMessage.getResponseBody().toString());
         } else {
             throw new IOException("Invalid Schema at " + schemaUrl);
@@ -119,16 +130,29 @@ public class GraphQlParser {
     }
 
     public void parse(String schema) {
-        Thread t =
-                new Thread(THREAD_PREFIX + threadId.incrementAndGet()) {
+        if (syncParse) {
+            generate(schema);
+            return;
+        }
+        ParserThread t =
+                new ParserThread(THREAD_PREFIX + threadId.incrementAndGet()) {
                     @Override
                     public void run() {
-                        LOG.error("endpointUrl: " + endpointUrl.toString());
-                        LOG.error("schema: " + schema);
-                        LOG.error("Import was successful.");
+                        generate(schema);
                     }
                 };
-        t.start();
+        extensionGraphQl.addParserThread(t);
+        t.startParser();
+    }
+
+    private void generate(String schema) {
+        try {
+            GraphQlGenerator generator = new GraphQlGenerator(schema, requestor, param);
+            generator.checkServiceMethods();
+            generator.generateAndSend();
+        } catch (Exception e) {
+            LOG.error(e.getMessage());
+        }
     }
 
     public void addRequesterListener(RequesterListener listener) {

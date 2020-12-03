@@ -19,9 +19,10 @@
  */
 package org.zaproxy.zap.extension.pscanrules;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,6 @@ import net.htmlparser.jericho.Source;
 import net.htmlparser.jericho.StartTag;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.core.scanner.Alert;
-import org.parosproxy.paros.extension.encoder.Base64;
 import org.parosproxy.paros.network.HttpMessage;
 import org.zaproxy.zap.extension.pscan.PassiveScanThread;
 import org.zaproxy.zap.extension.pscan.PluginPassiveScanner;
@@ -64,22 +64,21 @@ public class ViewstateScanRule extends PluginPassiveScanner {
         if (!v.isValid()) return;
 
         if (!v.hasMACtest1() || !v.hasMACtest2())
-            if (!v.hasMACtest1() && !v.hasMACtest2()) alertNoMACforSure(msg, id);
-            else alertNoMACUnsure(msg, id);
+            if (!v.hasMACtest1() && !v.hasMACtest2()) alertNoMACforSure().raise();
+            else alertNoMACUnsure().raise();
 
-        if (!v.isLatestAspNetVersion()) alertOldAspVersion(msg, id);
+        if (!v.isLatestAspNetVersion()) alertOldAspVersion().raise();
 
         List<ViewstateAnalyzerResult> listOfMatches = ViewstateAnalyzer.getSearchResults(v, this);
         for (ViewstateAnalyzerResult var : listOfMatches) {
-            if (var.hasResults()) alertViewstateAnalyzerResult(msg, id, var);
+            if (var.hasResults()) alertViewstateAnalyzerResult(var).raise();
         }
 
-        if (v.isSplit()) alertSplitViewstate(msg, id);
+        if (v.isSplit()) alertSplitViewstate().raise();
     }
 
-    private void alertViewstateAnalyzerResult(
-            HttpMessage msg, int id, ViewstateAnalyzerResult var) {
-        newAlert()
+    private AlertBuilder alertViewstateAnalyzerResult(ViewstateAnalyzerResult var) {
+        return newAlert()
                 .setName(var.pattern.getAlertHeader())
                 .setRisk(Alert.RISK_MEDIUM)
                 .setConfidence(Alert.CONFIDENCE_MEDIUM)
@@ -87,26 +86,24 @@ public class ViewstateScanRule extends PluginPassiveScanner {
                 .setOtherInfo(var.getResultExtract().toString())
                 .setSolution(getSolution())
                 .setCweId(16) // CWE Id 16 - Configuration
-                .setWascId(14) // WASC Id - Server Misconfiguration
-                .raise();
+                .setWascId(14); // WASC Id - Server Misconfiguration
     }
 
-    private void alertOldAspVersion(HttpMessage msg, int id) {
-        newAlert()
+    private AlertBuilder alertOldAspVersion() {
+        return newAlert()
                 .setName(Constant.messages.getString(MESSAGE_PREFIX + "oldver.name"))
                 .setRisk(Alert.RISK_LOW)
                 .setConfidence(Alert.CONFIDENCE_MEDIUM)
                 .setDescription(Constant.messages.getString(MESSAGE_PREFIX + "oldver.desc"))
                 .setSolution(Constant.messages.getString(MESSAGE_PREFIX + "oldver.soln"))
                 .setCweId(16) // CWE Id 16 - Configuration
-                .setWascId(14) // WASC Id - Server Misconfiguration
-                .raise();
+                .setWascId(14); // WASC Id - Server Misconfiguration
     }
 
     // TODO: see if this alert triggers too often, as the detection rule is far from being robust
     // for the moment
-    private void alertNoMACUnsure(HttpMessage msg, int id) {
-        newAlert()
+    private AlertBuilder alertNoMACUnsure() {
+        return newAlert()
                 .setName(Constant.messages.getString(MESSAGE_PREFIX + "nomac.unsure.name"))
                 .setRisk(Alert.RISK_HIGH)
                 .setConfidence(Alert.CONFIDENCE_LOW)
@@ -114,12 +111,11 @@ public class ViewstateScanRule extends PluginPassiveScanner {
                 .setSolution(Constant.messages.getString(MESSAGE_PREFIX + "nomac.unsure.soln"))
                 .setReference(Constant.messages.getString(MESSAGE_PREFIX + "nomac.unsure.refs"))
                 .setCweId(642) // CWE Id 642 - External Control of Critical State Data
-                .setWascId(14) // WASC Id - Server Misconfiguration
-                .raise();
+                .setWascId(14); // WASC Id - Server Misconfiguration
     }
 
-    private void alertNoMACforSure(HttpMessage msg, int id) {
-        newAlert()
+    private AlertBuilder alertNoMACforSure() {
+        return newAlert()
                 .setName(Constant.messages.getString(MESSAGE_PREFIX + "nomac.sure.name"))
                 .setRisk(Alert.RISK_HIGH)
                 .setConfidence(Alert.CONFIDENCE_MEDIUM)
@@ -127,20 +123,45 @@ public class ViewstateScanRule extends PluginPassiveScanner {
                 .setSolution(Constant.messages.getString(MESSAGE_PREFIX + "nomac.sure.soln"))
                 .setReference(Constant.messages.getString(MESSAGE_PREFIX + "nomac.sure.refs"))
                 .setCweId(642) // CWE Id 642 - External Control of Critical State Data
-                .setWascId(14) // WASC Id - Server Misconfiguration
-                .raise();
+                .setWascId(14); // WASC Id - Server Misconfiguration
     }
 
-    private void alertSplitViewstate(HttpMessage msg, int id) {
-        newAlert()
+    private AlertBuilder alertSplitViewstate() {
+        return newAlert()
                 .setName(Constant.messages.getString(MESSAGE_PREFIX + "split.name"))
                 .setRisk(Alert.RISK_INFO)
                 .setConfidence(Alert.CONFIDENCE_LOW)
                 .setDescription(Constant.messages.getString(MESSAGE_PREFIX + "split.desc"))
                 .setSolution(Constant.messages.getString(MESSAGE_PREFIX + "split.soln"))
                 .setCweId(16) // CWE Id 16 - Configuration
-                .setWascId(14) // WASC Id - Server Misconfiguration
-                .raise();
+                .setWascId(14); // WASC Id - Server Misconfiguration
+    }
+
+    public List<Alert> getExampleAlerts() {
+        List<Alert> alerts = new ArrayList<Alert>();
+        alerts.add(
+                alertViewstateAnalyzerResult(
+                                new ViewstateAnalyzerResult(ViewstateAnalyzerPattern.IPADDRESS) {
+                                    @Override
+                                    public Set<String> getResultExtract() {
+                                        return Collections.emptySet();
+                                    }
+                                })
+                        .build());
+        alerts.add(
+                alertViewstateAnalyzerResult(
+                                new ViewstateAnalyzerResult(ViewstateAnalyzerPattern.EMAIL) {
+                                    @Override
+                                    public Set<String> getResultExtract() {
+                                        return Collections.emptySet();
+                                    }
+                                })
+                        .build());
+        alerts.add(alertOldAspVersion().build());
+        alerts.add(alertNoMACUnsure().build());
+        alerts.add(alertNoMACforSure().build());
+        alerts.add(alertSplitViewstate().build());
+        return alerts;
     }
 
     @Override
@@ -335,11 +356,10 @@ public class ViewstateScanRule extends PluginPassiveScanner {
                 this.isSplit = wasSplit;
                 this.base64Value = s.getAttributeValue("value");
                 try {
-                    this.decodedValue =
-                            new String(Base64.decode(this.base64Value), Charset.forName("UTF-8"));
+                    this.decodedValue = base64Decode(this.base64Value);
                     this.isValid = true;
                     this.setVersion();
-                } catch (IllegalArgumentException | IOException e) {
+                } catch (IllegalArgumentException e) {
                     // Incorrect Base64 value.
                 }
             }
@@ -352,11 +372,10 @@ public class ViewstateScanRule extends PluginPassiveScanner {
                 this.isSplit = wasSplit;
                 this.base64Value = s;
                 try {
-                    this.decodedValue =
-                            new String(Base64.decode(this.base64Value), Charset.forName("UTF-8"));
+                    this.decodedValue = base64Decode(this.base64Value);
                     this.isValid = true;
                     this.setVersion();
-                } catch (IllegalArgumentException | IOException e) {
+                } catch (IllegalArgumentException e) {
                     // Incorrect Base64 value.
                 }
             }
@@ -438,5 +457,26 @@ public class ViewstateScanRule extends PluginPassiveScanner {
         public Object[] getSerializedComponentsTree() throws Exception {
             throw new Exception("Not implemented (yet)");
         }
+    }
+
+    private static String base64Decode(String value) {
+        byte[] bytes;
+
+        try {
+            bytes = Base64.getDecoder().decode(value.getBytes(StandardCharsets.US_ASCII));
+        } catch (IllegalArgumentException e) {
+            String message = e.getMessage();
+            if (message == null
+                    || !(message.contains("ending unit") || message.contains("Last unit "))) {
+                throw e;
+            }
+            bytes =
+                    Base64.getDecoder()
+                            .decode(
+                                    value.substring(0, value.length() - 1)
+                                            .getBytes(StandardCharsets.US_ASCII));
+        }
+
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 }

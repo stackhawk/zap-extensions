@@ -1,6 +1,6 @@
 import org.zaproxy.gradle.addon.AddOnStatus
 
-version = "29"
+version = "32"
 description = "The beta quality Active Scanner rules"
 
 zapAddOn {
@@ -43,9 +43,10 @@ dependencies {
     implementation("org.jsoup:jsoup:1.13.1")
 
     testImplementation(parent!!.childProjects.get("commonlib")!!)
+    testImplementation(parent!!.childProjects.get("commonlib")!!.sourceSets.test.get().output)
     testImplementation(parent!!.childProjects.get("custompayloads")!!)
     testImplementation(project(":testutils"))
-    testImplementation("org.apache.commons:commons-lang3:3.9")
+    testImplementation("org.apache.commons:commons-lang3:3.11")
 }
 
 spotless {
