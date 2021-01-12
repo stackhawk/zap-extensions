@@ -6,8 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## Unreleased
 ### Changed
 - Updated with upstream Wappalyzer icon and pattern changes.
+- Now using 2.10 logging infrastructure (Log4j 2.x).
+
+## [21.0.0] - 2020-12-15
+### Changed
+- Updated with upstream Wappalyzer icon and pattern changes.
+- Now targeting ZAP 2.10.
 - Add-on promoted to Release.
 - Dependency updates.
+
+### Added
+- Added support for CSS patterns, aligning with upstream project.
 
 ## [20.3.0] - 2020-09-30
 ### Changed
@@ -147,6 +156,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - First version
 
 
+[21.0.0]: https://github.com/zaproxy/zap-extensions/releases/wappalyzer-v21.0.0
 [20.3.0]: https://github.com/zaproxy/zap-extensions/releases/wappalyzer-v20.3.0
 [20.2.0]: https://github.com/zaproxy/zap-extensions/releases/wappalyzer-v20.2.0
 [20.1.0]: https://github.com/zaproxy/zap-extensions/releases/wappalyzer-v20.1.0

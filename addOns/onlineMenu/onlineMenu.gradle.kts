@@ -1,6 +1,6 @@
 import org.zaproxy.gradle.addon.AddOnStatus
 
-version = "8"
+version = "9"
 description = "ZAP Online menu items"
 
 zapAddOn {
@@ -11,5 +11,6 @@ zapAddOn {
     manifest {
         author.set("ZAP Dev Team")
         url.set("https://www.zaproxy.org/docs/desktop/addons/online-menu/")
+        notBeforeVersion.set("2.10.0")
     }
 }

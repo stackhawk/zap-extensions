@@ -5,7 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+
+## [1.2.0] - 2020-12-15
 ### Changed
+- Update minimum ZAP version to 2.10.0.
 - AbstractAppFilePlugin > ensure that test requests are appropriately rebuilt for this type of scan rule (Issue 6129). This will make the following Alpha and Beta active scan rules slightly more accurate:
   - Trace.axd, .env File, .htaccess file
 
@@ -18,5 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First version.
 
+[1.2.0]: https://github.com/zaproxy/zap-extensions/releases/commonlib-v1.2.0
 [1.1.0]: https://github.com/zaproxy/zap-extensions/releases/commonlib-v1.1.0
 [1.0.0]: https://github.com/zaproxy/zap-extensions/releases/commonlib-v1.0.0

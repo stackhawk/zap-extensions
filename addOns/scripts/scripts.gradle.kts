@@ -1,6 +1,6 @@
 import org.zaproxy.gradle.addon.AddOnStatus
 
-version = "27"
+version = "29"
 description = "Supports all JSR 223 scripting languages"
 
 zapAddOn {
@@ -11,6 +11,7 @@ zapAddOn {
     manifest {
         author.set("ZAP Dev Team")
         url.set("https://www.zaproxy.org/docs/desktop/addons/script-console/")
+        notBeforeVersion.set("2.10.0")
     }
 }
 

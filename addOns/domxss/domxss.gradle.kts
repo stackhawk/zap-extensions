@@ -1,6 +1,6 @@
 import org.zaproxy.gradle.addon.AddOnStatus
 
-version = "10"
+version = "11"
 description = "DOM XSS Active scanner rule"
 
 zapAddOn {
@@ -11,6 +11,7 @@ zapAddOn {
     manifest {
         author.set("Aabha Biyani, ZAP Dev Team")
         url.set("https://www.zaproxy.org/docs/desktop/addons/dom-xss-active-scan-rule/")
+        notBeforeVersion.set("2.10.0")
         // Don't search the add-on classes to prevent the inclusion
         // of the scanner, it's added/removed by the extension.
         classpath.setFrom(files())

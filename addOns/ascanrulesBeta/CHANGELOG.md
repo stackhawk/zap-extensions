@@ -4,6 +4,24 @@ All notable changes to this add-on will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
+
+
+## [33] - 2020-12-15
+### Changed
+- Now targeting ZAP 2.10.
+- The following scan rules now support Custom Page definitions:
+  - Hidden Files
+  - HTTPS as HTTP
+  - Insecure HTTP Methods
+  - Integer Overflow
+  - Padding Oracle
+  - Remove Code Execution CVE-2012-1823
+  - Session Fixation
+  - Source Code Disclosure CVE-2012-1823
+  - Source Code Disclosure Git
+  - Source Code Disclosure SVN
+
+## [32] - 2020-11-26
 ### Changed
 - XML External Entity Attack scan rule changed to parse response body irrespective of the HTTP response status code. (Issue 6203)
 - XML External Entity Attack scan rule changed to skip only Remote File Inclusion Attack when Callback extension is not available.
@@ -240,6 +258,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Updated to support new addon format
 
+[33]: https://github.com/zaproxy/zap-extensions/releases/ascanrulesBeta-v33
+[32]: https://github.com/zaproxy/zap-extensions/releases/ascanrulesBeta-v32
 [31]: https://github.com/zaproxy/zap-extensions/releases/ascanrulesBeta-v31
 [30]: https://github.com/zaproxy/zap-extensions/releases/ascanrulesBeta-v30
 [29]: https://github.com/zaproxy/zap-extensions/releases/ascanrulesBeta-v29

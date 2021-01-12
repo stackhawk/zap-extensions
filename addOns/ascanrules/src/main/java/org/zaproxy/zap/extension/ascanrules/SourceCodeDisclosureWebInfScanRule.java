@@ -30,11 +30,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.lang.SystemUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.core.scanner.AbstractHostPlugin;
 import org.parosproxy.paros.core.scanner.Alert;
@@ -84,7 +84,8 @@ public class SourceCodeDisclosureWebInfScanRule extends AbstractHostPlugin {
      */
     private static final Vulnerability vuln = Vulnerabilities.getVulnerability("wasc_34");
 
-    private static final Logger log = Logger.getLogger(SourceCodeDisclosureWebInfScanRule.class);
+    private static final Logger log =
+            LogManager.getLogger(SourceCodeDisclosureWebInfScanRule.class);
 
     @Override
     public int getId() {
@@ -186,11 +187,11 @@ public class SourceCodeDisclosureWebInfScanRule extends AbstractHostPlugin {
             while (javaClassesFound.size() > 0) {
                 String classname = javaClassesFound.get(0);
                 URI classURI = getClassURI(originalURI, classname);
-                if (log.isDebugEnabled()) log.debug("Looking for Class file: " + classURI.getURI());
+                log.debug("Looking for Class file: {}", classURI.getURI());
 
                 HttpMessage classfilemsg = new HttpMessage(classURI);
                 sendAndReceive(classfilemsg, false); // do not follow redirects
-                if (classfilemsg.getResponseHeader().getStatusCode() == HttpStatus.SC_OK) {
+                if (isPage200(classfilemsg)) {
                     // to decompile the class file, we need to write it to disk..
                     // under the current version of the library, at least
                     File classFile = null;
@@ -221,9 +222,7 @@ public class SourceCodeDisclosureWebInfScanRule extends AbstractHostPlugin {
                             continue;
                         }
 
-                        if (log.isDebugEnabled()) {
-                            log.debug("Source Code Disclosure alert for: " + classname);
-                        }
+                        log.debug("Source Code Disclosure alert for: {}", classname);
 
                         newAlert()
                                 .setConfidence(Alert.CONFIDENCE_MEDIUM)
@@ -260,14 +259,12 @@ public class SourceCodeDisclosureWebInfScanRule extends AbstractHostPlugin {
                         Matcher propsFileMatcher = PROPERTIES_FILE_PATTERN.matcher(javaSourceCode);
                         while (propsFileMatcher.find()) {
                             String propsFilename = propsFileMatcher.group(1);
-                            if (log.isDebugEnabled())
-                                log.debug("Found props file: " + propsFilename);
+                            log.debug("Found props file: {}", propsFilename);
 
                             URI propsFileURI = getPropsFileURI(originalURI, propsFilename);
                             HttpMessage propsfilemsg = new HttpMessage(propsFileURI);
                             sendAndReceive(propsfilemsg, false); // do not follow redirects
-                            if (propsfilemsg.getResponseHeader().getStatusCode()
-                                    == HttpStatus.SC_OK) {
+                            if (isPage200(propsfilemsg)) {
                                 // Holy sheet.. we found a properties file
                                 newAlert()
                                         .setConfidence(Alert.CONFIDENCE_MEDIUM)
@@ -303,8 +300,8 @@ public class SourceCodeDisclosureWebInfScanRule extends AbstractHostPlugin {
             }
         } catch (Exception e) {
             log.error(
-                    "Error scanning a Host for Source Code Disclosure via the WEB-INF folder: "
-                            + e.getMessage(),
+                    "Error scanning a Host for Source Code Disclosure via the WEB-INF folder: {}",
+                    e.getMessage(),
                     e);
         }
     }

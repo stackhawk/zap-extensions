@@ -13,6 +13,15 @@ even if out of scope, allowing to include necessary resources (e.g. scripts) fro
 By default it allows files with extension `.js` and `.css`.
 
 ### Changed
+- Update minimum ZAP version to 2.10.0.
+
+## [23.2.0] - 2020-11-09
+### Added
+- Allow to specify allowed resources (Issue 3236). The allowed resources are always fetched
+even if out of scope, allowing to include necessary resources (e.g. scripts) from 3rd-parties.
+By default it allows files with extension `.js` and `.css`.
+
+### Changed
 - Update minimum ZAP version to 2.9.0.
 - Maintenance changes.
 
