@@ -30,8 +30,6 @@ import org.parosproxy.paros.core.scanner.AbstractAppParamPlugin;
 import org.parosproxy.paros.core.scanner.Alert;
 import org.parosproxy.paros.core.scanner.Category;
 import org.parosproxy.paros.network.HttpMessage;
-import org.zaproxy.zap.model.Tech;
-import org.zaproxy.zap.model.TechSet;
 
 /** @author yhawke (2014) */
 public class PaddingOracleScanRule extends AbstractAppParamPlugin {
@@ -59,9 +57,6 @@ public class PaddingOracleScanRule extends AbstractAppParamPlugin {
     public String getName() {
         return Constant.messages.getString("ascanbeta.paddingoracle.name");
     }
-
-    @Override
-    public boolean targets(TechSet technologies) { return technologies.includes(Tech.Oracle); }
 
     @Override
     public String getDescription() {
