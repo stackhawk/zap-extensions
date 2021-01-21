@@ -1,4 +1,4 @@
-version = "6"
+version = "7"
 description = "New HTML report module allows users to customize report content."
 
 zapAddOn {
@@ -8,6 +8,7 @@ zapAddOn {
     manifest {
         author.set("Chienli Ma")
         url.set("https://www.zaproxy.org/docs/desktop/addons/custom-report/")
+        notBeforeVersion.set("2.10.0")
     }
 }
 

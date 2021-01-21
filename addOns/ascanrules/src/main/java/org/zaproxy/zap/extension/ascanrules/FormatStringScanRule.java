@@ -43,13 +43,13 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import org.apache.commons.httpclient.InvalidRedirectLocationException;
 import org.apache.commons.httpclient.URIException;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.core.scanner.AbstractAppParamPlugin;
 import org.parosproxy.paros.core.scanner.Alert;
 import org.parosproxy.paros.core.scanner.Category;
 import org.parosproxy.paros.network.HttpMessage;
-import org.parosproxy.paros.network.HttpStatusCode;
 import org.zaproxy.zap.model.Tech;
 import org.zaproxy.zap.model.TechSet;
 import org.zaproxy.zap.network.HttpResponseBody;
@@ -60,7 +60,7 @@ public class FormatStringScanRule extends AbstractAppParamPlugin {
     private static final String MESSAGE_PREFIX = "ascanrules.formatstring.";
 
     private static final int PLUGIN_ID = 30002;
-    private static Logger log = Logger.getLogger(FormatStringScanRule.class);
+    private static Logger log = LogManager.getLogger(FormatStringScanRule.class);
 
     @Override
     public int getId() {
@@ -109,15 +109,11 @@ public class FormatStringScanRule extends AbstractAppParamPlugin {
     public void scan(HttpMessage msg, String param, String value) {
 
         if (this.isStop()) { // Check if the user stopped things
-            if (log.isDebugEnabled()) {
-                log.debug("Scanner " + getName() + " Stopping.");
-            }
+            log.debug("Scanner {} Stopping.", getName());
             return; // Stop!
         }
 
-        if (getBaseMsg().getResponseHeader().getStatusCode()
-                == HttpStatusCode
-                        .INTERNAL_SERVER_ERROR) // Check to see if the page closed initially
+        if (isPage500(getBaseMsg())) // Check to see if the page closed initially
         {
             return; // Stop
         }
@@ -142,20 +138,15 @@ public class FormatStringScanRule extends AbstractAppParamPlugin {
             try {
                 sendAndReceive(testMsg);
             } catch (InvalidRedirectLocationException | UnknownHostException ex) {
-                if (log.isDebugEnabled())
-                    log.debug(
-                            "Caught "
-                                    + ex.getClass().getName()
-                                    + " "
-                                    + ex.getMessage()
-                                    + " when accessing: "
-                                    + testMsg.getRequestHeader().getURI().toString()
-                                    + "\n The target may have replied with a poorly formed redirect due to our input.");
+                log.debug(
+                        "Caught {} {} when accessing: {}.\n The target may have replied with a poorly formed redirect due to our input.",
+                        ex.getClass().getName(),
+                        ex.getMessage(),
+                        testMsg.getRequestHeader().getURI().toString());
                 return; // Something went wrong, no point continuing
             }
 
-            if (HttpStatusCode.INTERNAL_SERVER_ERROR
-                    == testMsg.getResponseHeader().getStatusCode()) {
+            if (isPage500(testMsg)) {
                 return; // Initial message returned error, subsequent requests are likely to as well
             }
 
@@ -183,19 +174,14 @@ public class FormatStringScanRule extends AbstractAppParamPlugin {
             try {
                 sendAndReceive(intialAttackMsg);
             } catch (InvalidRedirectLocationException | UnknownHostException ex) {
-                if (log.isDebugEnabled())
-                    log.debug(
-                            "Caught "
-                                    + ex.getClass().getName()
-                                    + " "
-                                    + ex.getMessage()
-                                    + " when accessing: "
-                                    + intialAttackMsg.getRequestHeader().getURI().toString()
-                                    + "\n The target may have replied with a poorly formed redirect due to our input.");
+                log.debug(
+                        "Caught {} {} when accessing: {}.\nThe target may have replied with a poorly formed redirect due to our input.",
+                        ex.getClass().getName(),
+                        ex.getMessage(),
+                        intialAttackMsg.getRequestHeader().getURI().toString());
                 return; // Something went wrong, no point continuing
             }
-            if (intialAttackMsg.getResponseHeader().getStatusCode()
-                    == HttpStatusCode.INTERNAL_SERVER_ERROR) {
+            if (isPage500(intialAttackMsg)) {
                 StringBuilder sb1 = new StringBuilder();
                 sb1.append(initialMessage);
                 for (i = 0; i < 10; i++) {
@@ -209,21 +195,16 @@ public class FormatStringScanRule extends AbstractAppParamPlugin {
                 try {
                     sendAndReceive(verificationMsg);
                 } catch (InvalidRedirectLocationException | UnknownHostException ex) {
-                    if (log.isDebugEnabled())
-                        log.debug(
-                                "Caught "
-                                        + ex.getClass().getName()
-                                        + " "
-                                        + ex.getMessage()
-                                        + " when accessing: "
-                                        + verificationMsg.getRequestHeader().getURI().toString()
-                                        + "\n The target may have replied with a poorly formed redirect due to our input.");
+                    log.debug(
+                            "Caught {} {} when accessing: {}.\n The target may have replied with a poorly formed redirect due to our input.",
+                            ex.getClass().getName(),
+                            ex.getMessage(),
+                            verificationMsg.getRequestHeader().getURI().toString());
                     return; // Something went wrong, no point continuing
                 }
                 HttpResponseBody secondAttackResponseBody = verificationMsg.getResponseBody();
                 if (secondAttackResponseBody.length() > initialResponseLength + 20
-                        && verificationMsg.getResponseHeader().getStatusCode()
-                                == HttpStatusCode.OK) {
+                        && isPage200(verificationMsg)) {
                     newAlert()
                             .setConfidence(Alert.CONFIDENCE_MEDIUM)
                             .setParam(param)
@@ -246,9 +227,7 @@ public class FormatStringScanRule extends AbstractAppParamPlugin {
             // errors.  It is only
             //  used if the GNU and generic C compiler check fails to find a vulnerability.
             if (this.isStop()) { // Check if the user stopped things
-                if (log.isDebugEnabled()) {
-                    log.debug("Scanner " + getName() + " Stopping.");
-                }
+                log.debug("Scanner {} Stopping.", getName());
                 return; // Stop!
             }
             StringBuilder sb2 = new StringBuilder();
@@ -271,19 +250,14 @@ public class FormatStringScanRule extends AbstractAppParamPlugin {
             try {
                 sendAndReceive(microsoftTestMsg);
             } catch (InvalidRedirectLocationException | UnknownHostException ex) {
-                if (log.isDebugEnabled())
-                    log.debug(
-                            "Caught "
-                                    + ex.getClass().getName()
-                                    + " "
-                                    + ex.getMessage()
-                                    + " when accessing: "
-                                    + microsoftTestMsg.getRequestHeader().getURI().toString()
-                                    + "\n The target may have replied with a poorly formed redirect due to our input.");
+                log.debug(
+                        "Caught {} {} when accessing: {}. \nThe target may have replied with a poorly formed redirect due to our input.",
+                        ex.getClass().getName(),
+                        ex.getMessage(),
+                        microsoftTestMsg.getRequestHeader().getURI().toString());
                 return; // Something went wrong, no point continuing
             }
-            if (microsoftTestMsg.getResponseHeader().getStatusCode()
-                    == HttpStatusCode.INTERNAL_SERVER_ERROR) {
+            if (isPage500(microsoftTestMsg)) {
                 newAlert()
                         .setConfidence(Alert.CONFIDENCE_MEDIUM)
                         .setParam(param)
@@ -295,9 +269,7 @@ public class FormatStringScanRule extends AbstractAppParamPlugin {
             return;
 
         } catch (URIException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("Failed to send HTTP message, cause: " + e.getMessage());
-            }
+            log.debug("Failed to send HTTP message, cause: {}", e.getMessage());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }

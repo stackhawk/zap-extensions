@@ -11,7 +11,7 @@ eclipse {
     }
 }
 
-version = "33"
+version = "34"
 description = "A graphical security scripting language, ZAPs macro language on steroids"
 
 zapAddOn {
@@ -34,7 +34,7 @@ zapAddOn {
 
 dependencies {
     compileOnly(parent!!.childProjects.get("selenium")!!)
-    implementation("org.mozilla:zest:0.14.2") {
+    implementation("org.zaproxy:zest:0.15.0") {
         // Provided by Selenium add-on.
         exclude(group = "org.seleniumhq.selenium")
         exclude(group = "com.codeborne", module = "phantomjsdriver")

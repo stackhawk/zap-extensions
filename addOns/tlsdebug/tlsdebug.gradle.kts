@@ -1,4 +1,4 @@
-version = "4"
+version = "5"
 description = "Provides a tab which allows to quickly debug a TLS/SSL connection"
 
 zapAddOn {
@@ -8,5 +8,6 @@ zapAddOn {
     manifest {
         author.set("P.M.J. Roth")
         url.set("https://www.zaproxy.org/docs/desktop/addons/tls-debug/")
+        notBeforeVersion.set("2.10.0")
     }
 }

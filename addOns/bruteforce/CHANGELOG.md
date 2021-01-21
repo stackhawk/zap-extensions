@@ -5,11 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+
+## [10] - 2020-12-15
+
 ### Added
 - Added option and functionality to find files without extension. (Issue 5883)
 
 ### Changed
-- Update minimum ZAP version to 2.9.0.
+- Update minimum ZAP version to 2.10.0.
 - Ensure requests are counted and progress updated (Issue 5437).
 - Updated owasp.org references (Issue 5962).
 
@@ -70,5 +73,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - First release as an add-on, previously bundled with ZAP core.
 
+[10]: https://github.com/zaproxy/zap-extensions/releases/bruteforce-v10
 [9]: https://github.com/zaproxy/zap-extensions/releases/bruteforce-v9
 [8]: https://github.com/zaproxy/zap-extensions/releases/bruteforce-v8

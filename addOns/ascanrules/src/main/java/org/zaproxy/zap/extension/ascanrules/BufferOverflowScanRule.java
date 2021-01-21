@@ -25,14 +25,14 @@ package org.zaproxy.zap.extension.ascanrules;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import org.apache.commons.httpclient.URIException;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.core.scanner.AbstractAppParamPlugin;
 import org.parosproxy.paros.core.scanner.Alert;
 import org.parosproxy.paros.core.scanner.Category;
 import org.parosproxy.paros.network.HttpMessage;
 import org.parosproxy.paros.network.HttpResponseHeader;
-import org.parosproxy.paros.network.HttpStatusCode;
 import org.zaproxy.zap.model.Tech;
 import org.zaproxy.zap.model.TechSet;
 
@@ -42,7 +42,7 @@ public class BufferOverflowScanRule extends AbstractAppParamPlugin {
     private static final String MESSAGE_PREFIX = "ascanrules.bufferoverflow.";
 
     private static final int PLUGIN_ID = 30001;
-    private static Logger log = Logger.getLogger(BufferOverflowScanRule.class);
+    private static Logger log = LogManager.getLogger(BufferOverflowScanRule.class);
 
     @Override
     public int getId() {
@@ -91,14 +91,10 @@ public class BufferOverflowScanRule extends AbstractAppParamPlugin {
     public void scan(HttpMessage msg, String param, String value) {
 
         if (this.isStop()) { // Check if the user stopped things
-            if (log.isDebugEnabled()) {
-                log.debug("Scanner " + this.getName() + " Stopping.");
-            }
+            log.debug("Scanner {} Stopping.", this.getName());
             return; // Stop!
         }
-        if (getBaseMsg().getResponseHeader().getStatusCode()
-                == HttpStatusCode
-                        .INTERNAL_SERVER_ERROR) // Check to see if the page closed initially
+        if (isPage500(getBaseMsg())) // Check to see if the page closed initially
         {
             return; // Stop
         }
@@ -112,15 +108,11 @@ public class BufferOverflowScanRule extends AbstractAppParamPlugin {
             try {
                 sendAndReceive(msg);
             } catch (UnknownHostException ex) {
-                if (log.isDebugEnabled())
-                    log.debug(
-                            "Caught "
-                                    + ex.getClass().getName()
-                                    + " "
-                                    + ex.getMessage()
-                                    + " when accessing: "
-                                    + msg.getRequestHeader().getURI().toString()
-                                    + "\n The target may have replied with a poorly formed redirect due to our input.");
+                log.debug(
+                        "Caught {} {} when accessing: {}.\n The target may have replied with a poorly formed redirect due to our input.",
+                        ex.getClass().getName(),
+                        ex.getMessage(),
+                        msg.getRequestHeader().getURI().toString());
                 return; // Something went wrong no point continuing
             }
 
@@ -128,9 +120,8 @@ public class BufferOverflowScanRule extends AbstractAppParamPlugin {
             // This is where BASE baseResponseBody was you detect potential vulnerabilities in the
             // response
             String chkerrorheader = requestReturn.getHeadersAsString();
-            log.debug("Header: " + chkerrorheader);
-            if (msg.getResponseHeader().getStatusCode() == HttpStatusCode.INTERNAL_SERVER_ERROR
-                    && chkerrorheader.contains(checkStringHeader1)) {
+            log.debug("Header: {}", chkerrorheader);
+            if (isPage500(msg) && chkerrorheader.contains(checkStringHeader1)) {
                 log.debug("Found Header");
                 newAlert()
                         .setConfidence(Alert.CONFIDENCE_MEDIUM)
@@ -145,9 +136,7 @@ public class BufferOverflowScanRule extends AbstractAppParamPlugin {
 
             return;
         } catch (URIException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("Failed to send HTTP message, cause: " + e.getMessage());
-            }
+            log.debug("Failed to send HTTP message, cause: {}", e.getMessage());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }

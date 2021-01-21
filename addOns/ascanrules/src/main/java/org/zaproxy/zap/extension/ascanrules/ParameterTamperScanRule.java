@@ -36,14 +36,14 @@ import java.net.UnknownHostException;
 import java.util.regex.Pattern;
 import org.apache.commons.httpclient.InvalidRedirectLocationException;
 import org.apache.commons.httpclient.URIException;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.core.scanner.AbstractAppParamPlugin;
 import org.parosproxy.paros.core.scanner.AbstractPlugin;
 import org.parosproxy.paros.core.scanner.Alert;
 import org.parosproxy.paros.core.scanner.Category;
 import org.parosproxy.paros.network.HttpMessage;
-import org.parosproxy.paros.network.HttpStatusCode;
 
 public class ParameterTamperScanRule extends AbstractAppParamPlugin {
 
@@ -75,7 +75,7 @@ public class ParameterTamperScanRule extends AbstractAppParamPlugin {
                     "(Apache Tomcat).*(Caused by:|HTTP Status 500 - Internal Server Error)",
                     PATTERN_PARAM);
     // ZAP: Added logger
-    private static Logger log = Logger.getLogger(ParameterTamperScanRule.class);
+    private static Logger log = LogManager.getLogger(ParameterTamperScanRule.class);
 
     @Override
     public int getId() {
@@ -123,15 +123,11 @@ public class ParameterTamperScanRule extends AbstractAppParamPlugin {
                 | IllegalArgumentException
                 | URIException
                 | UnknownHostException ex) {
-            if (log.isDebugEnabled())
-                log.debug(
-                        "Caught "
-                                + ex.getClass().getName()
-                                + " "
-                                + ex.getMessage()
-                                + " when accessing: "
-                                + normalMsg.getRequestHeader().getURI().toString()
-                                + "\n The target may have replied with a poorly formed redirect due to our input.");
+            log.debug(
+                    "Caught {} {} when accessing: {}.\n The target may have replied with a poorly formed redirect due to our input.",
+                    ex.getClass().getName(),
+                    ex.getMessage(),
+                    normalMsg.getRequestHeader().getURI().toString());
             return; // Something went wrong, no point continuing
         } catch (Exception e) {
             // ZAP: Log exceptions
@@ -139,7 +135,7 @@ public class ParameterTamperScanRule extends AbstractAppParamPlugin {
             return;
         }
 
-        if (normalMsg.getResponseHeader().getStatusCode() != HttpStatusCode.OK) {
+        if (!isPage200(normalMsg)) {
             return;
         }
 
@@ -162,15 +158,11 @@ public class ParameterTamperScanRule extends AbstractAppParamPlugin {
                         | IllegalArgumentException
                         | URIException
                         | UnknownHostException ex) {
-                    if (log.isDebugEnabled())
-                        log.debug(
-                                "Caught "
-                                        + ex.getClass().getName()
-                                        + " "
-                                        + ex.getMessage()
-                                        + " when accessing: "
-                                        + testMsg.getRequestHeader().getURI().toString()
-                                        + "\n The target may have replied with a poorly formed redirect due to our input.");
+                    log.debug(
+                            "Caught {} {} when accessing: {}.\n The target may have replied with a poorly formed redirect due to our input.",
+                            ex.getClass().getName(),
+                            ex.getMessage(),
+                            testMsg.getRequestHeader().getURI().toString());
                     continue; // Something went wrong, move on to the next item in the PARAM_LIST
                 }
                 if (checkResult(testMsg, param, attack, normalMsg.getResponseBody().toString())) {
@@ -186,8 +178,7 @@ public class ParameterTamperScanRule extends AbstractAppParamPlugin {
     private boolean checkResult(
             HttpMessage msg, String param, String attack, String normalHTTPResponse) {
 
-        if (msg.getResponseHeader().getStatusCode() != HttpStatusCode.OK
-                && !HttpStatusCode.isServerError(msg.getResponseHeader().getStatusCode())) {
+        if (!isPage200(msg) && !isPage500(msg)) {
             return false;
         }
 

@@ -19,6 +19,9 @@
  */
 package org.zaproxy.addon.kotlin;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.zaproxy.addon.kotlin.TestUtils.getScriptContents;
+
 import java.io.StringWriter;
 import java.io.Writer;
 import javax.script.Compilable;
@@ -27,10 +30,6 @@ import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.zaproxy.addon.kotlin.TestUtils.getScriptContents;
 
 public class PrintOutputTests {
 

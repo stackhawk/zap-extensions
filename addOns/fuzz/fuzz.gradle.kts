@@ -7,7 +7,7 @@ plugins {
 
 group = "org.zaproxy.addon"
 
-version = "13.1.0"
+version = "13.2.0"
 description = "Advanced fuzzer for manual testing"
 
 tasks.withType<JavaCompile> {
@@ -22,6 +22,7 @@ zapAddOn {
     manifest {
         author.set("ZAP Dev Team")
         url.set("https://www.zaproxy.org/docs/desktop/addons/fuzzer/")
+        notBeforeVersion.set("2.10.0")
     }
 }
 

@@ -4,6 +4,9 @@ All notable changes to this add-on will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
+
+
+## [10] - 2020-12-15
 ### Added
 - Add info and repo URLs.
 - Add link to the code in the help.
@@ -11,9 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Support for Chrome
 
 ### Changed
-- Update minimum ZAP version to 2.9.0.
+- Update minimum ZAP version to 2.10.0.
 - Maintenance changes.
 - Promote to beta
+- Now clicking on different buttons throughout the page to see if it triggers XSS.
 
 ## [9] - 2019-06-12
 ### Fixed
@@ -53,5 +57,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## 1 - 2015-08-24
 
 
+[10]: https://github.com/zaproxy/zap-extensions/releases/domxss-v10
 [9]: https://github.com/zaproxy/zap-extensions/releases/domxss-v9
 [8]: https://github.com/zaproxy/zap-extensions/releases/domxss-v8

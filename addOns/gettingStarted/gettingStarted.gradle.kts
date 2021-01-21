@@ -1,6 +1,6 @@
 import org.zaproxy.gradle.addon.AddOnStatus
 
-version = "12"
+version = "13"
 description = "A short Getting Started with ZAP Guide"
 
 zapAddOn {
@@ -11,6 +11,6 @@ zapAddOn {
     manifest {
         author.set("ZAP Dev Team")
         url.set("https://www.zaproxy.org/docs/desktop/addons/getting-started-guide/")
-        notBeforeVersion.set("2.9.0")
+        notBeforeVersion.set("2.10.0")
     }
 }

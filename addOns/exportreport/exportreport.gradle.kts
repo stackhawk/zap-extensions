@@ -1,4 +1,4 @@
-version = "7"
+version = "8"
 description = "Report Export module that allows users to customize content and export in a desired format."
 
 zapAddOn {
@@ -8,6 +8,7 @@ zapAddOn {
     manifest {
         author.set("Goran Sarenkapa - JordanGS")
         url.set("https://www.zaproxy.org/docs/desktop/addons/export-report/")
+        notBeforeVersion.set("2.10.0")
     }
 
     apiClientGen {
