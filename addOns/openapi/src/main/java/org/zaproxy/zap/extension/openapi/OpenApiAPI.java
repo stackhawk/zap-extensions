@@ -63,7 +63,10 @@ public class OpenApiAPI extends ApiImplementor {
                         new String[] {PARAM_URL},
                         new String[] {PARAM_HOST_OVERRIDE}));
         this.addApiAction(
-                new ApiAction(ACTION_GET_STRUCTURAL_NODE_MODIFIERS, new String[] {PARAM_FILE}));
+                new ApiAction(
+                        ACTION_GET_STRUCTURAL_NODE_MODIFIERS,
+                        new String[] {PARAM_FILE},
+                        new String[] {PARAM_TARGET}));
     }
 
     @Override
@@ -104,10 +107,11 @@ public class OpenApiAPI extends ApiImplementor {
 
         } else if (ACTION_GET_STRUCTURAL_NODE_MODIFIERS.equals(name)) {
             File file = handleFile(params);
+            String target = params.optString(PARAM_TARGET, "");
             ApiResponse[] responses;
             try {
                 responses =
-                        extension.getStructuralNodeModifiers(file).stream()
+                        extension.getStructuralNodeModifiers(file, target).stream()
                                 .map(
                                         (node) ->
                                                 new ApiResponseElement(

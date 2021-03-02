@@ -39,6 +39,7 @@ import org.parosproxy.paros.extension.ExtensionAdaptor;
 import org.parosproxy.paros.extension.ExtensionHook;
 import org.parosproxy.paros.network.HttpSender;
 import org.parosproxy.paros.view.View;
+import org.zaproxy.zap.extension.api.ApiException;
 import org.zaproxy.zap.extension.openapi.converter.swagger.InvalidUrlException;
 import org.zaproxy.zap.extension.openapi.converter.swagger.SwaggerConverter;
 import org.zaproxy.zap.extension.openapi.network.Requestor;
@@ -435,34 +436,62 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
         return false;
     }
 
-    public List<StructuralNodeModifier> getStructuralNodeModifiers(File file) {
-        SwaggerParseResult swaggerParseResult = SwaggerConverter.parse(file);
-        OpenAPI openAPI = swaggerParseResult.getOpenAPI();
-        List<StructuralNodeModifier> structuralNodeModifiers = new ArrayList<>();
-        openAPI.getPaths()
-                .forEach(
-                        (key, value) -> {
-                            if (value.getGet() != null && value.getGet().getParameters() != null) {
-                                value.getGet()
-                                        .getParameters()
-                                        .forEach(
-                                                (p) -> {
-                                                    if (p.getIn().equals("path")) {
-                                                        StringBuilder sb = new StringBuilder();
-                                                        sb.insert(0, "/(");
-                                                        sb.append(p.getName());
-                                                        sb.append("/)(.+?)(/.*)");
-                                                        structuralNodeModifiers.add(
-                                                                new StructuralNodeModifier(
-                                                                        StructuralNodeModifier.Type
-                                                                                .DataDrivenNode,
-                                                                        Pattern.compile(
-                                                                                sb.toString()),
-                                                                        p.getName()));
-                                                    }
-                                                });
-                            }
-                        });
-        return structuralNodeModifiers;
+    public List<StructuralNodeModifier> getStructuralNodeModifiers(
+            String fileName, String targetUrl) throws ApiException {
+        return getStructuralNodeModifiers(new File(fileName), targetUrl);
+    }
+
+    public List<StructuralNodeModifier> getStructuralNodeModifiers(File file, String targetUrl)
+            throws ApiException {
+        try {
+            SwaggerParseResult swaggerParseResult = SwaggerConverter.parse(file);
+            OpenAPI openAPI = swaggerParseResult.getOpenAPI();
+            List<StructuralNodeModifier> structuralNodeModifiers = new ArrayList<>();
+            openAPI.getPaths()
+                    .forEach(
+                            (key, value) -> {
+                                try {
+                                    if (value.getGet() != null
+                                            && value.getGet().getParameters() != null) {
+                                        value.getGet()
+                                                .getParameters()
+                                                .forEach(
+                                                        (p) -> {
+                                                            if (p.getIn().equals("path")) {
+                                                                StringBuilder sb =
+                                                                        new StringBuilder();
+                                                                sb.insert(0, targetUrl);
+                                                                sb.append("(");
+                                                                sb.append(
+                                                                        key.replace(
+                                                                                "{"
+                                                                                        + p
+                                                                                                .getName()
+                                                                                        + "}",
+                                                                                ""));
+                                                                sb.append(")(.+?)(/.*)");
+                                                                structuralNodeModifiers.add(
+                                                                        new StructuralNodeModifier(
+                                                                                StructuralNodeModifier
+                                                                                        .Type
+                                                                                        .DataDrivenNode,
+                                                                                Pattern.compile(
+                                                                                        sb
+                                                                                                .toString()),
+                                                                                p.getName()));
+                                                            }
+                                                        });
+                                    }
+                                } catch (Exception e) {
+                                    LOG.error(
+                                            "Unable to create structural node: " + e.getMessage());
+                                    e.printStackTrace();
+                                }
+                            });
+            return structuralNodeModifiers;
+        } catch (Exception e) {
+            LOG.error("could not create structural nodes: " + e.getMessage());
+            throw new ApiException(ApiException.Type.INTERNAL_ERROR);
+        }
     }
 }

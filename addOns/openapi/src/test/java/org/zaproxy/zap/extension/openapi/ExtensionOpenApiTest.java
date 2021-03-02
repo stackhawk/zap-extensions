@@ -41,6 +41,7 @@ import org.junit.platform.commons.support.HierarchyTraversalMode;
 import org.junit.platform.commons.support.ReflectionSupport;
 import org.parosproxy.paros.control.Control;
 import org.parosproxy.paros.extension.ExtensionLoader;
+import org.zaproxy.zap.extension.api.ApiException;
 import org.zaproxy.zap.extension.spider.ExtensionSpider;
 import org.zaproxy.zap.model.StructuralNodeModifier;
 import org.zaproxy.zap.testutils.NanoServerHandler;
@@ -189,10 +190,10 @@ public class ExtensionOpenApiTest extends AbstractServerTest {
     }
 
     @Test
-    public void shouldGenerateStructuralNodeModifiers() {
+    public void shouldGenerateStructuralNodeModifiers() throws ApiException {
         File file = getResourcePath("v3/VAmPI_defn.json").toFile();
         List<StructuralNodeModifier> structuralNodeModifiers =
-                classUnderTest.getStructuralNodeModifiers(file);
+                classUnderTest.getStructuralNodeModifiers(file, "http://localhost:9000");
         assertThat(
                 "Should return two structural node modifiers", structuralNodeModifiers.size() == 2);
     }
