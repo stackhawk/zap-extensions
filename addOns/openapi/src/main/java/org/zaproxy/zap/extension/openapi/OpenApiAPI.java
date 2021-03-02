@@ -21,7 +21,6 @@ package org.zaproxy.zap.extension.openapi;
 
 import java.io.File;
 import java.util.List;
-import java.util.stream.Collectors;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.URIException;
@@ -38,6 +37,7 @@ public class OpenApiAPI extends ApiImplementor {
     private static final String PREFIX = "openapi";
     static final String ACTION_IMPORT_FILE = "importFile";
     static final String ACTION_IMPORT_URL = "importUrl";
+    static final String ACTION_GET_STRUCTURAL_NODE_MODIFIERS = "getStructuralNodeModifiers";
     static final String PARAM_URL = "url";
     static final String PARAM_FILE = "file";
     static final String PARAM_TARGET = "target";
@@ -62,6 +62,11 @@ public class OpenApiAPI extends ApiImplementor {
                         ACTION_IMPORT_URL,
                         new String[] {PARAM_URL},
                         new String[] {PARAM_HOST_OVERRIDE}));
+        this.addApiAction(
+                new ApiAction(
+                        ACTION_GET_STRUCTURAL_NODE_MODIFIERS,
+                        new String[] {PARAM_FILE},
+                        new String[] {PARAM_TARGET}));
     }
 
     @Override
@@ -100,6 +105,24 @@ public class OpenApiAPI extends ApiImplementor {
                 throw new ApiException(ApiException.Type.ILLEGAL_PARAMETER, PARAM_HOST_OVERRIDE);
             }
 
+        } else if (ACTION_GET_STRUCTURAL_NODE_MODIFIERS.equals(name)) {
+            File file = handleFile(params);
+            String target = params.optString(PARAM_TARGET, "");
+            ApiResponse[] responses;
+            try {
+                responses =
+                        extension.getStructuralNodeModifiers(file, target).stream()
+                                .map(
+                                        (node) ->
+                                                new ApiResponseElement(
+                                                        node.getName(),
+                                                        node.getPattern().toString()))
+                                .toArray(ApiResponse[]::new);
+            } catch (InvalidUrlException e) {
+                throw new ApiException(ApiException.Type.ILLEGAL_PARAMETER, PARAM_TARGET);
+            }
+
+            return new ApiResponseList(name, responses);
         } else {
             throw new ApiException(ApiException.Type.BAD_ACTION);
         }
@@ -112,7 +135,9 @@ public class OpenApiAPI extends ApiImplementor {
         }
 
         if (!file.isFile()) {
-            throw new ApiException(ApiException.Type.ILLEGAL_PARAMETER, "Not a regular file " + file.getAbsolutePath());
+            throw new ApiException(
+                    ApiException.Type.ILLEGAL_PARAMETER,
+                    "Not a regular file " + file.getAbsolutePath());
         }
         return file;
     }

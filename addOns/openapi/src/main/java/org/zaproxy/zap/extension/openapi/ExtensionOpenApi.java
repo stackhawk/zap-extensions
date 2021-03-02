@@ -19,20 +19,16 @@
  */
 package org.zaproxy.zap.extension.openapi;
 
-import io.swagger.parser.OpenAPIParser;
 import io.swagger.v3.core.util.Json;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.parser.OpenAPIV3Parser;
-import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.apache.commons.httpclient.URI;
-import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.parosproxy.paros.CommandLine;
 import org.parosproxy.paros.Constant;
@@ -43,10 +39,12 @@ import org.parosproxy.paros.extension.ExtensionAdaptor;
 import org.parosproxy.paros.extension.ExtensionHook;
 import org.parosproxy.paros.network.HttpSender;
 import org.parosproxy.paros.view.View;
+import org.zaproxy.zap.extension.api.ApiException;
 import org.zaproxy.zap.extension.openapi.converter.swagger.InvalidUrlException;
 import org.zaproxy.zap.extension.openapi.converter.swagger.SwaggerConverter;
 import org.zaproxy.zap.extension.openapi.network.Requestor;
 import org.zaproxy.zap.extension.spider.ExtensionSpider;
+import org.zaproxy.zap.model.StructuralNodeModifier;
 import org.zaproxy.zap.model.ValueGenerator;
 import org.zaproxy.zap.spider.parser.SpiderParser;
 import org.zaproxy.zap.view.ZapMenuItem;
@@ -229,7 +227,8 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
                         .showWarningDialog(Constant.messages.getString("openapi.io.error"));
             }
             LOG.warn(e.getMessage(), e);
-            return Collections.singletonList(Constant.messages.getString("openapi.io.error" + e.getMessage()));
+            return Collections.singletonList(
+                    Constant.messages.getString("openapi.io.error" + e.getMessage()));
         }
     }
 
@@ -435,5 +434,64 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
     public boolean handleFile(File file) {
         // Not supported
         return false;
+    }
+
+    public List<StructuralNodeModifier> getStructuralNodeModifiers(
+            String fileName, String targetUrl) throws ApiException {
+        return getStructuralNodeModifiers(new File(fileName), targetUrl);
+    }
+
+    public List<StructuralNodeModifier> getStructuralNodeModifiers(File file, String targetUrl)
+            throws ApiException {
+        try {
+            SwaggerParseResult swaggerParseResult = SwaggerConverter.parse(file);
+            OpenAPI openAPI = swaggerParseResult.getOpenAPI();
+            List<StructuralNodeModifier> structuralNodeModifiers = new ArrayList<>();
+            openAPI.getPaths()
+                    .forEach(
+                            (key, value) -> {
+                                try {
+                                    if (value.getGet() != null
+                                            && value.getGet().getParameters() != null) {
+                                        value.getGet()
+                                                .getParameters()
+                                                .forEach(
+                                                        (p) -> {
+                                                            if (p.getIn().equals("path")) {
+                                                                StringBuilder sb =
+                                                                        new StringBuilder();
+                                                                sb.insert(0, targetUrl);
+                                                                sb.append("(");
+                                                                sb.append(
+                                                                        key.replace(
+                                                                                "{"
+                                                                                        + p
+                                                                                                .getName()
+                                                                                        + "}",
+                                                                                ""));
+                                                                sb.append(")(.+?)(/.*)");
+                                                                structuralNodeModifiers.add(
+                                                                        new StructuralNodeModifier(
+                                                                                StructuralNodeModifier
+                                                                                        .Type
+                                                                                        .DataDrivenNode,
+                                                                                Pattern.compile(
+                                                                                        sb
+                                                                                                .toString()),
+                                                                                p.getName()));
+                                                            }
+                                                        });
+                                    }
+                                } catch (Exception e) {
+                                    LOG.error(
+                                            "Unable to create structural node: " + e.getMessage());
+                                    e.printStackTrace();
+                                }
+                            });
+            return structuralNodeModifiers;
+        } catch (Exception e) {
+            LOG.error("could not create structural nodes: " + e.getMessage());
+            throw new ApiException(ApiException.Type.INTERNAL_ERROR);
+        }
     }
 }

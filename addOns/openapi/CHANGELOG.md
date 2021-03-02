@@ -3,8 +3,9 @@ All notable changes to this add-on will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## Unreleased
-
+## [18] - 2021-03-02
+### Added 
+- getStructuralNodeModifiers for building data nodes
 
 ## [17] - 2020-12-15
 ### Added
@@ -116,6 +117,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - First Version
 
+[18]: https://github.com/zaproxy/zap-extensions/releases/openapi-v18
 [17]: https://github.com/zaproxy/zap-extensions/releases/openapi-v17
 [16]: https://github.com/zaproxy/zap-extensions/releases/openapi-v16
 [15]: https://github.com/zaproxy/zap-extensions/releases/openapi-v15
