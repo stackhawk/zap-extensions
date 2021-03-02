@@ -19,6 +19,13 @@
  */
 package org.zaproxy.zap.extension.openapi;
 
+import static fi.iki.elonen.NanoHTTPD.newFixedLengthResponse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
+
 import fi.iki.elonen.NanoHTTPD;
 import java.io.File;
 import java.io.IOException;
@@ -35,15 +42,8 @@ import org.junit.platform.commons.support.ReflectionSupport;
 import org.parosproxy.paros.control.Control;
 import org.parosproxy.paros.extension.ExtensionLoader;
 import org.zaproxy.zap.extension.spider.ExtensionSpider;
+import org.zaproxy.zap.model.StructuralNodeModifier;
 import org.zaproxy.zap.testutils.NanoServerHandler;
-
-
-import static fi.iki.elonen.NanoHTTPD.newFixedLengthResponse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 
 public class ExtensionOpenApiTest extends AbstractServerTest {
 
@@ -59,7 +59,8 @@ public class ExtensionOpenApiTest extends AbstractServerTest {
         ExtensionLoader extensionLoader = mock(ExtensionLoader.class, withSettings().lenient());
         when(control.getExtensionLoader()).thenReturn(extensionLoader);
 
-        given(extensionLoader.getExtension(ExtensionSpider.class)).willReturn(mock(ExtensionSpider.class));
+        given(extensionLoader.getExtension(ExtensionSpider.class))
+                .willReturn(mock(ExtensionSpider.class));
     }
 
     @Test
@@ -68,15 +69,17 @@ public class ExtensionOpenApiTest extends AbstractServerTest {
         String test = "/PetStoreJson/";
         String defnName = "defn.json";
         this.nano.addHandler(new DefnServerHandler(test, defnName, "PetStore_defn.json"));
-        String fileContents = getHtml("PetStore_defn.json",
-                new String[][] {{"PORT", String.valueOf(this.nano.getListeningPort())}});
+        String fileContents =
+                getHtml(
+                        "PetStore_defn.json",
+                        new String[][] {{"PORT", String.valueOf(this.nano.getListeningPort())}});
         File tmpFile = File.createTempFile("foo", "bar");
         FileUtils.write(tmpFile, fileContents, Charset.defaultCharset());
 
         // when
         List<String> errors = classUnderTest.importOpenApiDefinition(tmpFile, "htp:/", false);
 
-        //then
+        // then
         assertThat("Should fail because of bad target override URL", !errors.isEmpty());
     }
 
@@ -86,15 +89,17 @@ public class ExtensionOpenApiTest extends AbstractServerTest {
         String test = "/PetStoreJson/";
         String defnName = "defn.json";
         this.nano.addHandler(new DefnServerHandler(test, defnName, "PetStore_defn.json"));
-        String fileContents = getHtml("PetStore_defn.json",
-                new String[][] {{"PORT", String.valueOf(this.nano.getListeningPort())}});
+        String fileContents =
+                getHtml(
+                        "PetStore_defn.json",
+                        new String[][] {{"PORT", String.valueOf(this.nano.getListeningPort())}});
         File tmpFile = File.createTempFile("foo", "bar");
         FileUtils.write(tmpFile, fileContents, Charset.defaultCharset());
 
         // when
         List<String> errors = classUnderTest.importOpenApiDefinition(tmpFile, false);
 
-        //then
+        // then
         assertThat("Should parse OK: " + errors, errors.isEmpty());
     }
 
@@ -107,10 +112,10 @@ public class ExtensionOpenApiTest extends AbstractServerTest {
         this.nano.addHandler(new DefnServerHandler(test, defnName, file));
 
         // when
-        List<String> errors = classUnderTest.importOpenApiDefinition(
-                getResourcePath(file).toFile(), false);
+        List<String> errors =
+                classUnderTest.importOpenApiDefinition(getResourcePath(file).toFile(), false);
 
-        //then
+        // then
         assertThat("Should parse OK: " + errors, errors.isEmpty());
     }
 
@@ -123,10 +128,10 @@ public class ExtensionOpenApiTest extends AbstractServerTest {
         this.nano.addHandler(new DefnServerHandler(test, defnName, file));
 
         // when
-        List<String> errors = classUnderTest.importOpenApiDefinition(
-                getResourcePath(file).toFile(), false);
+        List<String> errors =
+                classUnderTest.importOpenApiDefinition(getResourcePath(file).toFile(), false);
 
-        //then
+        // then
         assertThat("Should parse OK: " + errors, errors.isEmpty());
     }
 
@@ -142,7 +147,7 @@ public class ExtensionOpenApiTest extends AbstractServerTest {
         // when
         List<String> errors = classUnderTest.importOpenApiDefinition(uri, null, false);
 
-        //then
+        // then
         assertThat("Should fail fake URL", errors != null && !errors.isEmpty());
     }
 
@@ -155,7 +160,7 @@ public class ExtensionOpenApiTest extends AbstractServerTest {
         // when
         List<String> errors = classUnderTest.importOpenApiDefinition(uri, null, false);
 
-        //then
+        // then
         assertThat("Should fail fake URL", errors != null && !errors.isEmpty());
     }
 
@@ -167,7 +172,7 @@ public class ExtensionOpenApiTest extends AbstractServerTest {
         // when
         List<String> errors = classUnderTest.importOpenApiDefinition(file, false);
 
-        //then
+        // then
         assertThat("Should fail to parse bad json", !errors.isEmpty());
     }
 
@@ -179,16 +184,25 @@ public class ExtensionOpenApiTest extends AbstractServerTest {
         // when
         List<String> errors = classUnderTest.importOpenApiDefinition(file, false);
 
-        //then
+        // then
         assertThat("Should fail to parse bad yaml", !errors.isEmpty());
+    }
+
+    @Test
+    public void shouldGenerateStructuralNodeModifiers() {
+        File file = getResourcePath("v3/VAmPI_defn.json").toFile();
+        List<StructuralNodeModifier> structuralNodeModifiers =
+                classUnderTest.getStructuralNodeModifiers(file);
+        assertThat(
+                "Should return two structural node modifiers", structuralNodeModifiers.size() == 2);
     }
 
     private static void setControlSingleton(Control control) throws Exception {
         Field field =
                 ReflectionSupport.findFields(
-                        Control.class,
-                        f -> "control".equals(f.getName()),
-                        HierarchyTraversalMode.TOP_DOWN)
+                                Control.class,
+                                f -> "control".equals(f.getName()),
+                                HierarchyTraversalMode.TOP_DOWN)
                         .get(0);
         field.setAccessible(true);
         field.set(Control.class, control);

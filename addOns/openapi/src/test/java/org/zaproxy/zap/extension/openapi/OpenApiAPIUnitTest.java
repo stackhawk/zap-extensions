@@ -19,6 +19,16 @@
  */
 package org.zaproxy.zap.extension.openapi;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,17 +43,6 @@ import org.zaproxy.zap.extension.api.ApiException;
 import org.zaproxy.zap.extension.api.ApiResponse;
 import org.zaproxy.zap.model.DefaultNameValuePair;
 import org.zaproxy.zap.model.NameValuePair;
-
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
 /** Unit test for {@link OpenApiAPI}. */
 public class OpenApiAPIUnitTest extends AbstractServerTest {
@@ -76,13 +75,15 @@ public class OpenApiAPIUnitTest extends AbstractServerTest {
         public void shouldThrowIllegalParameterIfErrorDetected() {
             // Given
             String fakeError = "fakeError";
-            JSONObject params = params(param(OpenApiAPI.PARAM_URL, "http://not-reachable.example.com"));
+            JSONObject params =
+                    params(param(OpenApiAPI.PARAM_URL, "http://not-reachable.example.com"));
             given(extension.importOpenApiDefinition(any(URI.class), eq(""), eq(false)))
                     .willReturn(Collections.singletonList(fakeError));
             // When / Then
             ApiException exception =
                     assertThrows(
-                            ApiException.class, () -> openApiAPI.handleApiAction(OpenApiAPI.ACTION_IMPORT_URL, params));
+                            ApiException.class,
+                            () -> openApiAPI.handleApiAction(OpenApiAPI.ACTION_IMPORT_URL, params));
             assertThat(exception.getType(), is(equalTo(ApiException.Type.ILLEGAL_PARAMETER)));
             assertThat(exception.toString(), containsString(fakeError));
         }
@@ -90,14 +91,18 @@ public class OpenApiAPIUnitTest extends AbstractServerTest {
         @Test
         public void shouldImportWithNoErrorDetected() throws ApiException {
             // Given
-            JSONObject params = params(param(OpenApiAPI.PARAM_URL, "http://not-reachable.example.com"));
+            JSONObject params =
+                    params(param(OpenApiAPI.PARAM_URL, "http://not-reachable.example.com"));
             given(extension.importOpenApiDefinition(any(URI.class), eq(""), eq(false)))
                     .willReturn(null);
             // When
-            ApiResponse apiResponse = openApiAPI.handleApiAction(OpenApiAPI.ACTION_IMPORT_URL, params);
+            ApiResponse apiResponse =
+                    openApiAPI.handleApiAction(OpenApiAPI.ACTION_IMPORT_URL, params);
 
             // Then
-            assertThat("Import URL Action returned", apiResponse.getName().equals(OpenApiAPI.ACTION_IMPORT_URL));
+            assertThat(
+                    "Import URL Action returned",
+                    apiResponse.getName().equals(OpenApiAPI.ACTION_IMPORT_URL));
         }
     }
 
@@ -112,7 +117,10 @@ public class OpenApiAPIUnitTest extends AbstractServerTest {
             // When / Then
             ApiException exception =
                     assertThrows(
-                            ApiException.class, () -> openApiAPI.handleApiAction(OpenApiAPI.ACTION_IMPORT_FILE, params));
+                            ApiException.class,
+                            () ->
+                                    openApiAPI.handleApiAction(
+                                            OpenApiAPI.ACTION_IMPORT_FILE, params));
             assertThat(exception.getType(), is(equalTo(ApiException.Type.DOES_NOT_EXIST)));
             assertThat(exception.toString(), containsString(fileName));
         }
@@ -126,7 +134,10 @@ public class OpenApiAPIUnitTest extends AbstractServerTest {
             // When / Then
             ApiException exception =
                     assertThrows(
-                            ApiException.class, () -> openApiAPI.handleApiAction(OpenApiAPI.ACTION_IMPORT_FILE, params));
+                            ApiException.class,
+                            () ->
+                                    openApiAPI.handleApiAction(
+                                            OpenApiAPI.ACTION_IMPORT_FILE, params));
             assertThat(exception.getType(), is(equalTo(ApiException.Type.ILLEGAL_PARAMETER)));
             assertThat(exception.toString(), containsString(directory));
         }
@@ -135,14 +146,17 @@ public class OpenApiAPIUnitTest extends AbstractServerTest {
         public void shouldThrowIllegalParameterIfErrorDetected() {
             // Given
             String parseError = "parseError";
-            JSONObject params = params(param(OpenApiAPI.PARAM_FILE,
-                    getResourceAsFile("bad-json.json")));
+            JSONObject params =
+                    params(param(OpenApiAPI.PARAM_FILE, getResourceAsFile("bad-json.json")));
             given(extension.importOpenApiDefinition(any(File.class), eq(""), eq(false)))
                     .willReturn(Collections.singletonList(parseError));
             // When / Then
             ApiException exception =
                     assertThrows(
-                            ApiException.class, () -> openApiAPI.handleApiAction(OpenApiAPI.ACTION_IMPORT_FILE, params));
+                            ApiException.class,
+                            () ->
+                                    openApiAPI.handleApiAction(
+                                            OpenApiAPI.ACTION_IMPORT_FILE, params));
             assertThat(exception.getType(), is(equalTo(ApiException.Type.ILLEGAL_PARAMETER)));
             assertThat(exception.toString(), containsString(parseError));
         }
@@ -150,15 +164,18 @@ public class OpenApiAPIUnitTest extends AbstractServerTest {
         @Test
         public void shouldImportWithNoErrorDetected() throws ApiException {
             // Given
-            JSONObject params = params(param(OpenApiAPI.PARAM_FILE,
-                    getResourceAsFile("bad-json.json")));
+            JSONObject params =
+                    params(param(OpenApiAPI.PARAM_FILE, getResourceAsFile("bad-json.json")));
             given(extension.importOpenApiDefinition(any(File.class), eq(""), eq(false)))
                     .willReturn(null);
             // When
-            ApiResponse apiResponse = openApiAPI.handleApiAction(OpenApiAPI.ACTION_IMPORT_FILE, params);
+            ApiResponse apiResponse =
+                    openApiAPI.handleApiAction(OpenApiAPI.ACTION_IMPORT_FILE, params);
 
             // Then
-            assertThat("Import File Action Returned", apiResponse.getName().equals(OpenApiAPI.ACTION_IMPORT_FILE));
+            assertThat(
+                    "Import File Action Returned",
+                    apiResponse.getName().equals(OpenApiAPI.ACTION_IMPORT_FILE));
         }
     }
 

@@ -39,7 +39,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -400,7 +399,8 @@ public class SwaggerConverter implements Converter {
         List<String> errors = new ArrayList<>();
         for (SwaggerParserExtension ex : OpenAPIV3Parser.getExtensions()) {
             errors.clear();
-            SwaggerParseResult swaggerParseResult = ex.readLocation(file.getAbsolutePath(), null, parseOptions);
+            SwaggerParseResult swaggerParseResult =
+                    ex.readLocation(file.getAbsolutePath(), null, parseOptions);
             OpenAPI openAPI = swaggerParseResult.getOpenAPI();
             if (openAPI != null) {
                 return swaggerParseResult;
