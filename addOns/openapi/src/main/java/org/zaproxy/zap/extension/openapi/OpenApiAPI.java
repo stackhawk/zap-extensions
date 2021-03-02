@@ -63,7 +63,7 @@ public class OpenApiAPI extends ApiImplementor {
                         new String[] {PARAM_URL},
                         new String[] {PARAM_HOST_OVERRIDE}));
         this.addApiAction(
-                new ApiAction(ACTION_GET_STRUCTURAL_NODE_MODIFIERS, new String[] {PARAM_URL}));
+                new ApiAction(ACTION_GET_STRUCTURAL_NODE_MODIFIERS, new String[] {PARAM_FILE}));
     }
 
     @Override
