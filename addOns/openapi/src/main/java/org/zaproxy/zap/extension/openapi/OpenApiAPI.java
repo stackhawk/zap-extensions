@@ -28,22 +28,22 @@ import org.zaproxy.zap.extension.api.ApiAction;
 import org.zaproxy.zap.extension.api.ApiException;
 import org.zaproxy.zap.extension.api.ApiImplementor;
 import org.zaproxy.zap.extension.api.ApiResponse;
-import org.zaproxy.zap.extension.api.ApiResponseElement;
 import org.zaproxy.zap.extension.api.ApiResponseList;
 import org.zaproxy.zap.extension.openapi.converter.swagger.InvalidUrlException;
+import org.zaproxy.zap.utils.ApiUtils;
 
 public class OpenApiAPI extends ApiImplementor {
 
     private static final String PREFIX = "openapi";
     static final String ACTION_IMPORT_FILE = "importFile";
     static final String ACTION_IMPORT_URL = "importUrl";
-    static final String ACTION_GET_STRUCTURAL_NODE_MODIFIERS = "getStructuralNodeModifiers";
     static final String PARAM_URL = "url";
     static final String PARAM_FILE = "file";
     static final String PARAM_TARGET = "target";
+    static final String PARAM_CONTEXT_ID = "contextId";
 
     private static final String PARAM_HOST_OVERRIDE = "hostOverride";
-    private ExtensionOpenApi extension = null;
+    private ExtensionOpenApi extension;
 
     /** Provided only for API client generator usage. */
     public OpenApiAPI() {
@@ -56,17 +56,12 @@ public class OpenApiAPI extends ApiImplementor {
                 new ApiAction(
                         ACTION_IMPORT_FILE,
                         new String[] {PARAM_FILE},
-                        new String[] {PARAM_TARGET}));
+                        new String[] {PARAM_TARGET, PARAM_CONTEXT_ID}));
         this.addApiAction(
                 new ApiAction(
                         ACTION_IMPORT_URL,
                         new String[] {PARAM_URL},
-                        new String[] {PARAM_HOST_OVERRIDE}));
-        this.addApiAction(
-                new ApiAction(
-                        ACTION_GET_STRUCTURAL_NODE_MODIFIERS,
-                        new String[] {PARAM_FILE},
-                        new String[] {PARAM_TARGET}));
+                        new String[] {PARAM_HOST_OVERRIDE, PARAM_CONTEXT_ID}));
     }
 
     @Override
@@ -81,7 +76,13 @@ public class OpenApiAPI extends ApiImplementor {
             List<String> errors;
             String target = params.optString(PARAM_TARGET, "");
             try {
-                errors = extension.importOpenApiDefinition(file, target, false);
+                if (params.containsKey(PARAM_CONTEXT_ID)) {
+                    int ctxId = ApiUtils.getContextByParamId(params, PARAM_CONTEXT_ID).getId();
+                    errors = extension.importOpenApiDefinition(file, target, false, ctxId);
+                } else {
+                    errors = extension.importOpenApiDefinition(file, target, false);
+                }
+
             } catch (InvalidUrlException e) {
                 throw new ApiException(ApiException.Type.ILLEGAL_PARAMETER, PARAM_TARGET);
             }
@@ -92,11 +93,20 @@ public class OpenApiAPI extends ApiImplementor {
         } else if (ACTION_IMPORT_URL.equals(name)) {
             try {
                 String override = params.optString(PARAM_HOST_OVERRIDE, "");
-
-                List<String> errors =
-                        extension.importOpenApiDefinition(
-                                new URI(params.getString(PARAM_URL), false), override, false);
-
+                List<String> errors;
+                if (params.containsKey(PARAM_CONTEXT_ID)) {
+                    int ctxId = ApiUtils.getContextByParamId(params, PARAM_CONTEXT_ID).getId();
+                    errors =
+                            extension.importOpenApiDefinition(
+                                    new URI(params.getString(PARAM_URL), false),
+                                    override,
+                                    false,
+                                    ctxId);
+                } else {
+                    errors =
+                            extension.importOpenApiDefinition(
+                                    new URI(params.getString(PARAM_URL), false), override, false);
+                }
                 checkErrors(errors);
                 return new ApiResponseList(name);
             } catch (URIException e) {
@@ -104,25 +114,6 @@ public class OpenApiAPI extends ApiImplementor {
             } catch (InvalidUrlException e) {
                 throw new ApiException(ApiException.Type.ILLEGAL_PARAMETER, PARAM_HOST_OVERRIDE);
             }
-
-        } else if (ACTION_GET_STRUCTURAL_NODE_MODIFIERS.equals(name)) {
-            File file = handleFile(params);
-            String target = params.optString(PARAM_TARGET, "");
-            ApiResponse[] responses;
-            try {
-                responses =
-                        extension.getStructuralNodeModifiers(file, target).stream()
-                                .map(
-                                        (node) ->
-                                                new ApiResponseElement(
-                                                        node.getName(),
-                                                        node.getPattern().toString()))
-                                .toArray(ApiResponse[]::new);
-            } catch (InvalidUrlException e) {
-                throw new ApiException(ApiException.Type.ILLEGAL_PARAMETER, PARAM_TARGET);
-            }
-
-            return new ApiResponseList(name, responses);
         } else {
             throw new ApiException(ApiException.Type.BAD_ACTION);
         }

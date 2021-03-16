@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Pattern;
 import org.apache.commons.httpclient.URI;
 import org.apache.log4j.Logger;
 import org.parosproxy.paros.CommandLine;
@@ -37,13 +36,14 @@ import org.parosproxy.paros.extension.CommandLineArgument;
 import org.parosproxy.paros.extension.CommandLineListener;
 import org.parosproxy.paros.extension.ExtensionAdaptor;
 import org.parosproxy.paros.extension.ExtensionHook;
+import org.parosproxy.paros.model.Model;
 import org.parosproxy.paros.network.HttpSender;
 import org.parosproxy.paros.view.View;
-import org.zaproxy.zap.extension.api.ApiException;
 import org.zaproxy.zap.extension.openapi.converter.swagger.InvalidUrlException;
 import org.zaproxy.zap.extension.openapi.converter.swagger.SwaggerConverter;
 import org.zaproxy.zap.extension.openapi.network.Requestor;
 import org.zaproxy.zap.extension.spider.ExtensionSpider;
+import org.zaproxy.zap.model.Context;
 import org.zaproxy.zap.model.StructuralNodeModifier;
 import org.zaproxy.zap.model.ValueGenerator;
 import org.zaproxy.zap.spider.parser.SpiderParser;
@@ -119,13 +119,9 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
             menuImportLocalOpenApi.setToolTipText(
                     Constant.messages.getString("openapi.topmenu.import.importopenapi.tooltip"));
             menuImportLocalOpenApi.addActionListener(
-                    new java.awt.event.ActionListener() {
-                        @Override
-                        public void actionPerformed(java.awt.event.ActionEvent e) {
+                    e ->
                             new ImportFromFileDialog(
-                                    View.getSingleton().getMainFrame(), ExtensionOpenApi.this);
-                        }
-                    });
+                                    View.getSingleton().getMainFrame(), ExtensionOpenApi.this));
         }
         return menuImportLocalOpenApi;
     }
@@ -140,19 +136,22 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
 
             final ExtensionOpenApi shadowCopy = this;
             menuImportUrlOpenApi.addActionListener(
-                    new java.awt.event.ActionListener() {
-
-                        @Override
-                        public void actionPerformed(java.awt.event.ActionEvent e) {
-                            new ImportFromUrlDialog(View.getSingleton().getMainFrame(), shadowCopy);
-                        }
-                    });
+                    e -> new ImportFromUrlDialog(View.getSingleton().getMainFrame(), shadowCopy));
         }
         return menuImportUrlOpenApi;
     }
 
     public void importOpenApiDefinition(final URI uri) {
-        this.importOpenApiDefinition(uri, null, false);
+        this.importOpenApiDefinition(uri, null, false, -1);
+    }
+
+    public void importOpenApiDefinition(final URI uri, int contextId) {
+        this.importOpenApiDefinition(uri, null, false, contextId);
+    }
+
+    public List<String> importOpenApiDefinition(
+            final URI uri, final String targetUrl, boolean initViaUi) {
+        return importOpenApiDefinition(uri, targetUrl, initViaUi, -1);
     }
 
     /**
@@ -162,13 +161,15 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
      * @param targetUrl the URL to override the URL defined in the API, might be {@code null}.
      * @param initViaUi {@code true} if the import is being done through the GUI, {@code false}
      *     otherwise.
+     * @param contextId The contextId to add structural modifiers (data driven nodes) from openapi
+     *     spec path parameters {@code null}
      * @return the list of errors, if any. Returns {@code null} if the import is being done through
      *     the GUI, or, if not done through the GUI the target was not accessed (caused by an {@code
      *     IOException}).
      * @throws InvalidUrlException if the target URL is not valid.
      */
     public List<String> importOpenApiDefinition(
-            final URI uri, final String targetUrl, boolean initViaUi) {
+            final URI uri, final String targetUrl, boolean initViaUi, int contextId) {
         Requestor requestor = new Requestor(HttpSender.MANUAL_REQUEST_INITIATOR);
         requestor.addListener(new HistoryPersister());
         try {
@@ -180,7 +181,8 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
                     requestor.getResponseBody(uri),
                     targetUrl,
                     uri.getScheme() + "://" + uri.getAuthority() + path,
-                    initViaUi);
+                    initViaUi,
+                    contextId);
         } catch (IOException e) {
             if (initViaUi) {
                 View.getSingleton()
@@ -192,11 +194,24 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
     }
 
     public void importOpenApiDefinition(final File file) {
-        this.importOpenApiDefinition(file, false);
+        this.importOpenApiDefinition(file, false, -1);
+    }
+
+    public void importOpenApiDefinition(final File file, int contextId) {
+        this.importOpenApiDefinition(file, false, contextId);
+    }
+
+    public List<String> importOpenApiDefinition(final File file, boolean initViaUi, int contextId) {
+        return this.importOpenApiDefinition(file, null, initViaUi, contextId);
     }
 
     public List<String> importOpenApiDefinition(final File file, boolean initViaUi) {
-        return this.importOpenApiDefinition(file, null, initViaUi);
+        return this.importOpenApiDefinition(file, null, initViaUi, -1);
+    }
+
+    public List<String> importOpenApiDefinition(
+            final File file, final String targetUrl, boolean initViaUi) {
+        return this.importOpenApiDefinition(file, targetUrl, initViaUi, -1);
     }
 
     /**
@@ -206,12 +221,14 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
      * @param targetUrl the URL to override the URL defined in the API, might be {@code null}.
      * @param initViaUi {@code true} if the import is being done through the GUI, {@code false}
      *     otherwise.
+     * @param contextId The contextId to add structural modifiers (data driven nodes) from openapi
+     *     spec path parameters {@code null}
      * @return the list of errors, if any. Returns {@code null} if the import is being done through
      *     the GUI.
      * @throws InvalidUrlException if the target URL is not valid.
      */
     public List<String> importOpenApiDefinition(
-            final File file, final String targetUrl, boolean initViaUi) {
+            final File file, final String targetUrl, boolean initViaUi, int contextId) {
         try {
 
             SwaggerParseResult swaggerParseResult = SwaggerConverter.parse(file);
@@ -220,7 +237,8 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
             if (openApi == null) {
                 return swaggerParseResult.getMessages();
             }
-            return importOpenApiDefinition(Json.pretty(openApi), targetUrl, null, initViaUi);
+            return importOpenApiDefinition(
+                    Json.pretty(openApi), targetUrl, null, initViaUi, contextId);
         } catch (Exception e) {
             if (initViaUi) {
                 View.getSingleton()
@@ -233,10 +251,28 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
     }
 
     private List<String> importOpenApiDefinition(
-            String defn, final String targetUrl, final String definitionUrl, boolean initViaUi) {
+            String defn,
+            final String targetUrl,
+            final String definitionUrl,
+            boolean initViaUi,
+            int contextId) {
         final List<String> errors = new ArrayList<>();
         SwaggerConverter converter =
                 new SwaggerConverter(targetUrl, definitionUrl, defn, getValueGenerator());
+
+        if (contextId >= 0) {
+            try {
+                List<StructuralNodeModifier> structuralNodeModifiers =
+                        converter.getStructuralNodeModifiers();
+                Context ctx = Model.getSingleton().getSession().getContext(contextId);
+                ctx.setDataDrivenNodes(structuralNodeModifiers);
+            } catch (Exception e) {
+                LOG.error(
+                        "Error setting data driven nodes from spec for contextId: " + contextId, e);
+                errors.add(e.getMessage());
+            }
+        }
+
         Thread t =
                 new Thread(THREAD_PREFIX + threadId++) {
 
@@ -295,7 +331,6 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
                     }
                 };
         t.start();
-
         if (!initViaUi) {
             try {
                 t.join();
@@ -305,7 +340,7 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
             }
             return errors;
         }
-        return errors.isEmpty() ? null : errors;
+        return null;
     }
 
     private ValueGenerator getValueGenerator() {
@@ -434,64 +469,5 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
     public boolean handleFile(File file) {
         // Not supported
         return false;
-    }
-
-    public List<StructuralNodeModifier> getStructuralNodeModifiers(
-            String fileName, String targetUrl) throws ApiException {
-        return getStructuralNodeModifiers(new File(fileName), targetUrl);
-    }
-
-    public List<StructuralNodeModifier> getStructuralNodeModifiers(File file, String targetUrl)
-            throws ApiException {
-        try {
-            SwaggerParseResult swaggerParseResult = SwaggerConverter.parse(file);
-            OpenAPI openAPI = swaggerParseResult.getOpenAPI();
-            List<StructuralNodeModifier> structuralNodeModifiers = new ArrayList<>();
-            openAPI.getPaths()
-                    .forEach(
-                            (key, value) -> {
-                                try {
-                                    if (value.getGet() != null
-                                            && value.getGet().getParameters() != null) {
-                                        value.getGet()
-                                                .getParameters()
-                                                .forEach(
-                                                        (p) -> {
-                                                            if (p.getIn().equals("path")) {
-                                                                StringBuilder sb =
-                                                                        new StringBuilder();
-                                                                sb.insert(0, targetUrl);
-                                                                sb.append("(");
-                                                                sb.append(
-                                                                        key.replace(
-                                                                                "{"
-                                                                                        + p
-                                                                                                .getName()
-                                                                                        + "}",
-                                                                                ""));
-                                                                sb.append(")(.+?)(/.*)");
-                                                                structuralNodeModifiers.add(
-                                                                        new StructuralNodeModifier(
-                                                                                StructuralNodeModifier
-                                                                                        .Type
-                                                                                        .DataDrivenNode,
-                                                                                Pattern.compile(
-                                                                                        sb
-                                                                                                .toString()),
-                                                                                p.getName()));
-                                                            }
-                                                        });
-                                    }
-                                } catch (Exception e) {
-                                    LOG.error(
-                                            "Unable to create structural node: " + e.getMessage());
-                                    e.printStackTrace();
-                                }
-                            });
-            return structuralNodeModifiers;
-        } catch (Exception e) {
-            LOG.error("could not create structural nodes: " + e.getMessage());
-            throw new ApiException(ApiException.Type.INTERNAL_ERROR);
-        }
     }
 }
