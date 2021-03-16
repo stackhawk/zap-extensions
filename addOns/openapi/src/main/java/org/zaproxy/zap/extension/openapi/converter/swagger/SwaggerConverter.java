@@ -28,6 +28,7 @@ import io.swagger.v3.core.util.Json;
 import io.swagger.v3.core.util.Yaml;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.servers.ServerVariable;
 import io.swagger.v3.parser.OpenAPIV3Parser;
@@ -44,11 +45,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 import org.apache.log4j.Logger;
 import org.parosproxy.paros.Constant;
+import org.zaproxy.zap.extension.api.ApiException;
 import org.zaproxy.zap.extension.openapi.converter.Converter;
 import org.zaproxy.zap.extension.openapi.generators.Generators;
 import org.zaproxy.zap.extension.openapi.network.RequestModel;
+import org.zaproxy.zap.model.StructuralNodeModifier;
 import org.zaproxy.zap.model.ValueGenerator;
 
 public class SwaggerConverter implements Converter {
@@ -56,14 +60,14 @@ public class SwaggerConverter implements Converter {
     /** The base key for internationalised messages. */
     private static final String BASE_KEY_I18N = "openapi.swaggerconverter.";
 
-    private static Logger LOG = Logger.getLogger(SwaggerConverter.class);
+    private static final Logger LOG = Logger.getLogger(SwaggerConverter.class);
     private final UriBuilder targetUriBuilder;
     private final UriBuilder definitionUriBuilder;
     private String defn;
-    private OperationHelper operationHelper;
-    private RequestModelConverter requestConverter;
-    private Generators generators;
-    private List<String> errors = new ArrayList<String>();
+    private final OperationHelper operationHelper;
+    private final RequestModelConverter requestConverter;
+    private final Generators generators;
+    private final List<String> errors = new ArrayList<>();
 
     public SwaggerConverter(String defn, ValueGenerator valGen) {
         this(null, null, defn, valGen);
@@ -412,5 +416,65 @@ public class SwaggerConverter implements Converter {
         SwaggerParseResult swaggerParseResult = new SwaggerParseResult();
         swaggerParseResult.setMessages(errors);
         return swaggerParseResult;
+    }
+
+    public List<StructuralNodeModifier> getStructuralNodeModifiers() throws ApiException {
+        try {
+            OpenAPI openAPI = getOpenAPI();
+            String targetUrl;
+            if (targetUriBuilder.isEmpty()) {
+                targetUrl = null;
+            } else {
+                targetUrl = targetUriBuilder.build();
+            }
+
+            List<org.zaproxy.zap.model.StructuralNodeModifier> structuralNodeModifiers =
+                    new ArrayList<>();
+            final String finalTargetUrl = targetUrl;
+
+            for (Map.Entry<String, PathItem> entry : openAPI.getPaths().entrySet()) {
+                String key = entry.getKey();
+                PathItem value = entry.getValue();
+                try {
+                    if (hasParameters(value)) {
+                        for (Parameter parameter : value.getGet().getParameters()) {
+                            if (parameter.getIn().equals("path")) {
+                                StructuralNodeModifier structuralNodeModifier =
+                                        buildStructuralNodeModifier(finalTargetUrl, key, parameter);
+                                structuralNodeModifiers.add(structuralNodeModifier);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    LOG.error("Unable to create structural node: " + e.getMessage(), e);
+                }
+            }
+            return structuralNodeModifiers;
+        } catch (Exception e) {
+            LOG.error("could not create structural nodes: " + e.getMessage());
+            throw new ApiException(ApiException.Type.INTERNAL_ERROR);
+        }
+    }
+
+    private boolean hasParameters(PathItem value) {
+        return value.getGet() != null && value.getGet().getParameters() != null;
+    }
+
+    private Pattern buildDDNPattern(String finalTargetUrl, String key, Parameter parameter) {
+        StringBuilder sb = new StringBuilder();
+        if (finalTargetUrl != null) {
+            sb.insert(0, finalTargetUrl);
+        }
+        sb.append("(");
+        sb.append(key.replace("{" + parameter.getName() + "}", ""));
+        sb.append(")(.+?)(/.*)");
+        return Pattern.compile(sb.toString());
+    }
+
+    private StructuralNodeModifier buildStructuralNodeModifier(
+            String finalTargetUrl, String key, Parameter parameter) {
+        Pattern pattern = buildDDNPattern(finalTargetUrl, key, parameter);
+        return new StructuralNodeModifier(
+                StructuralNodeModifier.Type.DataDrivenNode, pattern, parameter.getName());
     }
 }
