@@ -39,7 +39,12 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import org.apache.log4j.Logger;
 import org.parosproxy.paros.Constant;
@@ -55,14 +60,14 @@ public class SwaggerConverter implements Converter {
     /** The base key for internationalised messages. */
     private static final String BASE_KEY_I18N = "openapi.swaggerconverter.";
 
-    private static Logger LOG = Logger.getLogger(SwaggerConverter.class);
+    private static final Logger LOG = Logger.getLogger(SwaggerConverter.class);
     private final UriBuilder targetUriBuilder;
     private final UriBuilder definitionUriBuilder;
     private String defn;
-    private OperationHelper operationHelper;
-    private RequestModelConverter requestConverter;
-    private Generators generators;
-    private java.util.List<String> errors = new java.util.ArrayList<>();
+    private final OperationHelper operationHelper;
+    private final RequestModelConverter requestConverter;
+    private final Generators generators;
+    private final List<String> errors = new ArrayList<>();
 
     public SwaggerConverter(String defn, ValueGenerator valGen) {
         this(null, null, defn, valGen);
@@ -160,8 +165,7 @@ public class SwaggerConverter implements Converter {
     }
 
     private List<RequestModel> convertToRequest(List<OperationModel> operations) {
-        java.util.List<org.zaproxy.zap.extension.openapi.network.RequestModel> requests =
-                new java.util.LinkedList<>();
+        List<RequestModel> requests = new LinkedList<>();
         for (OperationModel operation : operations) {
             requests.add(requestConverter.convert(operation, generators));
         }
@@ -175,7 +179,7 @@ public class SwaggerConverter implements Converter {
                     Constant.messages.getString(BASE_KEY_I18N + "parse.defn.exception", defn));
         }
 
-        java.util.List<OperationModel> operations = new java.util.ArrayList<>();
+        List<OperationModel> operations = new ArrayList<>();
         List<UriBuilder> serverUriBuilders =
                 createUriBuilders(openAPI.getServers(), definitionUriBuilder);
         for (String url :
@@ -247,13 +251,13 @@ public class SwaggerConverter implements Converter {
     }
 
     // Package access for testing.
-    static java.util.Set<String> createApiUrls(
+    static Set<String> createApiUrls(
             List<UriBuilder> serverUriBuilders,
             UriBuilder targetUriBuilder,
             UriBuilder definitionUriBuilder)
             throws SwaggerException {
         if (targetUriBuilder.isEmpty()) {
-            java.util.Set<String> urls = new java.util.TreeSet<>();
+            Set<String> urls = new TreeSet<>();
             for (UriBuilder serverUrl : serverUriBuilders) {
                 try {
                     urls.add(serverUrl.build());
@@ -291,7 +295,7 @@ public class SwaggerConverter implements Converter {
                             serverUriBuilder));
         }
 
-        java.util.Set<String> urls = new java.util.TreeSet<>();
+        Set<String> urls = new TreeSet<>();
         try {
             urls.add(finalUriBuilder.build());
         } catch (IllegalArgumentException e) {
@@ -329,12 +333,11 @@ public class SwaggerConverter implements Converter {
     // Package access for testing.
     static List<UriBuilder> createUriBuilders(
             List<Server> servers, UriBuilder definitionUriBuilder) {
-        java.util.List<UriBuilder> urls = new java.util.ArrayList<>();
+        List<UriBuilder> urls = new ArrayList<>();
         for (Server server : servers) {
             String url = server.getUrl();
             if (server.getVariables() != null) {
-                for (java.util.Map.Entry<String, ServerVariable> entry :
-                        server.getVariables().entrySet()) {
+                for (Map.Entry<String, ServerVariable> entry : server.getVariables().entrySet()) {
                     // default is always set
                     url = url.replace("{" + entry.getKey() + "}", entry.getValue().getDefault());
                 }
@@ -367,10 +370,10 @@ public class SwaggerConverter implements Converter {
         ParseOptions options = new ParseOptions();
         options.setResolveFully(true);
         SwaggerParseResult res =
-                new OpenAPIV3Parser().readContents(this.defn, new java.util.ArrayList<>(), options);
+                new OpenAPIV3Parser().readContents(this.defn, new ArrayList<>(), options);
         if (res.getOpenAPI() == null) {
             // try v2
-            res = new OpenAPIParser().readContents(this.defn, new java.util.ArrayList<>(), options);
+            res = new OpenAPIParser().readContents(this.defn, new ArrayList<>(), options);
         }
         if (res != null && res.getMessages() != null) {
             errors.addAll(res.getMessages());
@@ -380,7 +383,7 @@ public class SwaggerConverter implements Converter {
     }
 
     private void addOperations(OpenAPI openApi, String url, List<OperationModel> operations) {
-        for (java.util.Map.Entry<String, PathItem> entry : openApi.getPaths().entrySet()) {
+        for (Map.Entry<String, PathItem> entry : openApi.getPaths().entrySet()) {
             operations.addAll(
                     operationHelper.getAllOperations(entry.getValue(), url + entry.getKey()));
         }
@@ -397,7 +400,7 @@ public class SwaggerConverter implements Converter {
         parseOptions.setResolve(true);
         parseOptions.setResolveFully(true);
 
-        java.util.List<String> errors = new java.util.ArrayList<>();
+        List<String> errors = new ArrayList<>();
         for (SwaggerParserExtension ex : OpenAPIV3Parser.getExtensions()) {
             errors.clear();
             SwaggerParseResult swaggerParseResult =
@@ -425,11 +428,11 @@ public class SwaggerConverter implements Converter {
                 targetUrl = targetUriBuilder.build();
             }
 
-            java.util.List<org.zaproxy.zap.model.StructuralNodeModifier> structuralNodeModifiers =
-                    new java.util.ArrayList<>();
+            List<org.zaproxy.zap.model.StructuralNodeModifier> structuralNodeModifiers =
+                    new ArrayList<>();
             final String finalTargetUrl = targetUrl;
 
-            for (java.util.Map.Entry<String, PathItem> entry : openAPI.getPaths().entrySet()) {
+            for (Map.Entry<String, PathItem> entry : openAPI.getPaths().entrySet()) {
                 String key = entry.getKey();
                 PathItem value = entry.getValue();
                 try {
