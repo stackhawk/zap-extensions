@@ -22,6 +22,8 @@ package org.zaproxy.zap.extension.openapi;
 import io.swagger.v3.core.util.Json;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -119,9 +121,13 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
             menuImportLocalOpenApi.setToolTipText(
                     Constant.messages.getString("openapi.topmenu.import.importopenapi.tooltip"));
             menuImportLocalOpenApi.addActionListener(
-                    e ->
+                    new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
                             new ImportFromFileDialog(
-                                    View.getSingleton().getMainFrame(), ExtensionOpenApi.this));
+                                    View.getSingleton().getMainFrame(), ExtensionOpenApi.this);
+                        }
+                    });
         }
         return menuImportLocalOpenApi;
     }
@@ -136,7 +142,12 @@ public class ExtensionOpenApi extends ExtensionAdaptor implements CommandLineLis
 
             final ExtensionOpenApi shadowCopy = this;
             menuImportUrlOpenApi.addActionListener(
-                    e -> new ImportFromUrlDialog(View.getSingleton().getMainFrame(), shadowCopy));
+                    new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            new ImportFromUrlDialog(View.getSingleton().getMainFrame(), shadowCopy);
+                        }
+                    });
         }
         return menuImportUrlOpenApi;
     }
