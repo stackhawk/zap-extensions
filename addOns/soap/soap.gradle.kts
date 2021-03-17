@@ -1,6 +1,10 @@
 version = "6"
 description = "Imports and scans WSDL files containing SOAP endpoints."
 
+plugins {
+    `maven-publish`
+}
+
 zapAddOn {
     addOnName.set("SOAP Support")
     zapVersion.set("2.9.0")
@@ -22,4 +26,35 @@ dependencies {
     implementation("com.sun.xml.messaging.saaj:saaj-impl:1.5.2")
 
     testImplementation(project(":testutils"))
+}
+
+publishing {
+    repositories {
+        mavenLocal()
+        maven {
+            name = "nest"
+            // Only publish via from CodeBuild with the set env vars
+            url = uri("""s3://artifacts.${System.getenv("APP_ENV") ?: "sandbox"}.stackhawk.com/${System.getenv("ARTIFACT_PATH") ?: "pushes"}/Nest/""")
+            authentication {
+                register("awsIm", AwsImAuthentication::class)
+            }
+        }
+    }
+
+    publications {
+        register("soap", MavenPublication::class) {
+            groupId = "org.zaproxy.addon"
+            artifactId = "soap"
+            version = version
+            from(components["java"])
+        }
+    }
+}
+
+tasks.register("publishToStackHawk") {
+    group = "publishing"
+    dependsOn(tasks.withType<PublishToMavenRepository>().matching {
+        it.repository == publishing.repositories["nest"] &&
+                it.publication == publishing.publications["soap"]
+    })
 }
