@@ -223,6 +223,25 @@ public class ExtensionOpenApiTest extends AbstractServerTest {
                 ctx.getDataDrivenNodes().get(0).getPattern().pattern().startsWith(targetUrl));
     }
 
+    @Test
+    public void shouldGenerateDataDrivenNodesOnContextForMultiVarPath() {
+        // given
+        File file = getResourcePath("v3/MultiVarPath_defn.yaml").toFile();
+        Context ctx = getDefaultContext();
+        String targetUrl = "http://localhost:9000";
+
+        // when
+        classUnderTest.importOpenApiDefinition(file, targetUrl, false, ctx.getId());
+
+        // then
+        assertThat(
+                "Should have 2 data driven nodes in the context",
+                ctx.getDataDrivenNodes().size() == 2);
+        assertThat(
+                "Should start with targetUrl",
+                ctx.getDataDrivenNodes().get(0).getPattern().pattern().startsWith(targetUrl));
+    }
+
     private Context getDefaultContext() {
         String ctxName = "Default Content";
         Context ctx = Model.getSingleton().getSession().getContext(ctxName);
