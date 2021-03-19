@@ -28,7 +28,6 @@ import io.swagger.v3.core.util.Json;
 import io.swagger.v3.core.util.Yaml;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.servers.ServerVariable;
 import io.swagger.v3.parser.OpenAPIV3Parser;
@@ -40,6 +39,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +48,6 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 import org.apache.log4j.Logger;
 import org.parosproxy.paros.Constant;
-import org.zaproxy.zap.extension.api.ApiException;
 import org.zaproxy.zap.extension.openapi.converter.Converter;
 import org.zaproxy.zap.extension.openapi.generators.Generators;
 import org.zaproxy.zap.extension.openapi.network.RequestModel;
@@ -418,7 +417,8 @@ public class SwaggerConverter implements Converter {
         return swaggerParseResult;
     }
 
-    public List<StructuralNodeModifier> getStructuralNodeModifiers() throws ApiException {
+    public List<StructuralNodeModifier> getStructuralNodeModifiers() {
+        List<StructuralNodeModifier> structuralNodeModifiers = new ArrayList<>();
         try {
             OpenAPI openAPI = getOpenAPI();
             String targetUrl;
@@ -428,53 +428,83 @@ public class SwaggerConverter implements Converter {
                 targetUrl = targetUriBuilder.build();
             }
 
-            List<org.zaproxy.zap.model.StructuralNodeModifier> structuralNodeModifiers =
-                    new ArrayList<>();
-            final String finalTargetUrl = targetUrl;
-
+            Set<String> ddnRegexStrings = new HashSet<>();
+            // check for DDN on each key (path) in the spec
             for (Map.Entry<String, PathItem> entry : openAPI.getPaths().entrySet()) {
                 String key = entry.getKey();
-                PathItem value = entry.getValue();
                 try {
-                    if (hasParameters(value)) {
-                        for (Parameter parameter : value.getGet().getParameters()) {
-                            if (parameter.getIn().equals("path")) {
-                                StructuralNodeModifier structuralNodeModifier =
-                                        buildStructuralNodeModifier(finalTargetUrl, key, parameter);
-                                structuralNodeModifiers.add(structuralNodeModifier);
-                            }
-                        }
+                    List<String> params = getPathParameters(key);
+                    String ddnPattern = createStructuralNodeRegexString(params, targetUrl, key);
+                    if (ddnPattern != null) {
+                        ddnRegexStrings.add(ddnPattern);
                     }
                 } catch (Exception e) {
-                    LOG.error("Unable to create structural node: " + e.getMessage(), e);
+                    LOG.error("error evaluating DDN for key: " + key, e);
                 }
             }
-            return structuralNodeModifiers;
+
+            int ddnCnt = 0;
+            for (String regexString : ddnRegexStrings) {
+                try {
+                    Pattern pattern = Pattern.compile(regexString);
+                    StructuralNodeModifier structuralNodeModifier =
+                            createStructuralNode(pattern, "DDN" + ddnCnt++);
+                    structuralNodeModifiers.add(structuralNodeModifier);
+                } catch (Exception e) {
+                    LOG.error("error adding structural node", e);
+                }
+            }
+
         } catch (Exception e) {
             LOG.error("could not create structural nodes: " + e.getMessage());
-            throw new ApiException(ApiException.Type.INTERNAL_ERROR);
         }
+        return structuralNodeModifiers;
     }
 
-    private boolean hasParameters(PathItem value) {
-        return value.getGet() != null && value.getGet().getParameters() != null;
-    }
-
-    private Pattern buildDDNPattern(String finalTargetUrl, String key, Parameter parameter) {
-        StringBuilder sb = new StringBuilder();
-        if (finalTargetUrl != null) {
-            sb.insert(0, finalTargetUrl);
-        }
-        sb.append("(");
-        sb.append(key.replace("{" + parameter.getName() + "}", ""));
-        sb.append(")(.+?)(/.*)");
-        return Pattern.compile(sb.toString());
-    }
-
-    private StructuralNodeModifier buildStructuralNodeModifier(
-            String finalTargetUrl, String key, Parameter parameter) {
-        Pattern pattern = buildDDNPattern(finalTargetUrl, key, parameter);
+    private StructuralNodeModifier createStructuralNode(Pattern pattern, String ddnName) {
         return new StructuralNodeModifier(
-                StructuralNodeModifier.Type.DataDrivenNode, pattern, parameter.getName());
+                StructuralNodeModifier.Type.DataDrivenNode, pattern, ddnName);
+    }
+
+    private String createStructuralNodeRegexString(
+            List<String> params, String finalTargetUrl, String key) {
+        if (params.size() > 0) {
+            // get last param as the DDN for the key
+            String lastParam = params.get(params.size() - 1);
+
+            StringBuilder sb = new StringBuilder();
+            if (finalTargetUrl != null) {
+                sb.insert(0, finalTargetUrl);
+            }
+
+            sb.append("(");
+            String pathTill = key.split(lastParam)[0].replace("{", "");
+            // replace other params with .+? regex in the first path grouping
+            for (String param : params) {
+                if (!param.equals(lastParam)) {
+                    pathTill = pathTill.replace(param, ".+?");
+                }
+            }
+            sb.append(pathTill);
+            // add trailing matcher for this DDN
+            sb.append(")(.+?)(/.*)");
+            return removeBrackets(sb.toString());
+        }
+        return null;
+    }
+
+    private List<String> getPathParameters(String key) {
+        String[] pathParts = key.split("/");
+        List<String> params = new ArrayList<>();
+        for (String part : pathParts) {
+            if (part.matches("\\{.*}")) {
+                params.add(removeBrackets(part));
+            }
+        }
+        return params;
+    }
+
+    private String removeBrackets(String str) {
+        return str.replace("{", "").replace("}", "");
     }
 }
